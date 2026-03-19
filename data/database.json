@@ -1,0 +1,126 @@
+{
+  "equipes": [
+    {
+      "id": 1,
+      "nome": "Os Galaticos",
+      "responsavel": "Joao Pereira",
+      "email": "joao@fpm.edu.br",
+      "sigla": "OG",
+      "cor": "linear-gradient(180deg, #278eff 0%, #1455b7 100%)",
+      "membros": [
+        {
+          "id": 11,
+          "nome": "Joao Pereira",
+          "funcao": "Capitao",
+          "habilidades": [
+            "Lideranca",
+            "Passe"
+          ]
+        },
+        {
+          "id": 12,
+          "nome": "Ana Carla",
+          "funcao": "Membro",
+          "habilidades": [
+            "Velocidade",
+            "Ataque"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nome": "Esquadrao Fenix",
+      "responsavel": "Mariana Costa",
+      "email": "mariana@fpm.edu.br",
+      "sigla": "EF",
+      "cor": "linear-gradient(180deg, #ff9736 0%, #a54a04 100%)",
+      "membros": [
+        {
+          "id": 21,
+          "nome": "Mariana Costa",
+          "funcao": "Capitao",
+          "habilidades": [
+            "Lideranca",
+            "Tatica"
+          ]
+        },
+        {
+          "id": 22,
+          "nome": "Ricardo Alves",
+          "funcao": "Membro",
+          "habilidades": [
+            "Defesa",
+            "Resistencia"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nome": "Relampago FPM",
+      "responsavel": "Carlos Eduardo",
+      "email": "carlos@fpm.edu.br",
+      "sigla": "RF",
+      "cor": "linear-gradient(180deg, #2fd6a6 0%, #0d6b53 100%)",
+      "membros": []
+    },
+    {
+      "id": 4,
+      "nome": "nome",
+      "responsavel": "nome",
+      "email": "user@example.com",
+      "membros": [
+        {
+          "id": 401,
+          "nome": "nome",
+          "habilidades": [
+            "força"
+          ],
+          "funcao": "membro"
+        }
+      ],
+      "icone": "icone",
+      "cor": "cor",
+      "sigla": "sigla"
+    }
+  ],
+  "confrontos": [
+    {
+      "id": 1,
+      "equipeA": "Engenharia FC",
+      "equipeB": "Marketing United",
+      "data": "12 Nov, 2024",
+      "horario": "19:30",
+      "local": "Quadra A",
+      "modalidade": "Futsal",
+      "status": "agendado",
+      "golsA": null,
+      "golsB": null
+    },
+    {
+      "id": 2,
+      "equipeA": "Financeiro Titans",
+      "equipeB": "RH Eagles",
+      "data": "08 Nov, 2024",
+      "horario": "18:00",
+      "local": "Quadra Principal",
+      "modalidade": "Futsal",
+      "status": "encerrado",
+      "golsA": 3,
+      "golsB": 1
+    },
+    {
+      "id": 3,
+      "equipeA": "Vendas Sharks",
+      "equipeB": "Product Lions",
+      "data": "15 Nov, 2024",
+      "horario": "20:00",
+      "local": "Arena Tech",
+      "modalidade": "Futsal",
+      "status": "agendado",
+      "golsA": null,
+      "golsB": null
+    }
+  ]
+}
