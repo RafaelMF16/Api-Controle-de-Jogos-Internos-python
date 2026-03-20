@@ -20,6 +20,7 @@ class EquipeService:
             nome=payload.nome,
             responsavel=payload.responsavel,
             email=payload.email,
+            modalidade=payload.modalidade,
             membros=[
                 Membro(
                     id=item.id or self._proximo_id_membro(proximo_id, index),
@@ -30,8 +31,6 @@ class EquipeService:
                 for index, item in enumerate(payload.membros, start=1)
             ],
             icone=payload.icone,
-            cor=payload.cor,
-            sigla=payload.sigla or payload.nome[:2].upper(),
         )
         return self.repository.criar(equipe)
 
@@ -45,6 +44,7 @@ class EquipeService:
             nome=payload.nome,
             responsavel=payload.responsavel,
             email=payload.email,
+            modalidade=payload.modalidade,
             membros=[
                 Membro(
                     id=item.id or self._proximo_id_membro(equipe_id, index),
@@ -55,8 +55,6 @@ class EquipeService:
                 for index, item in enumerate(payload.membros, start=1)
             ],
             icone=payload.icone,
-            cor=payload.cor,
-            sigla=payload.sigla or payload.nome[:2].upper(),
         )
         return self.repository.atualizar(equipe_id, equipe_atualizada)
 

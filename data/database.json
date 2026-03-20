@@ -5,8 +5,7 @@
       "nome": "Os Galaticos",
       "responsavel": "Joao Pereira",
       "email": "joao@fpm.edu.br",
-      "sigla": "OG",
-      "cor": "linear-gradient(180deg, #278eff 0%, #1455b7 100%)",
+      "modalidade": "Futsal",
       "membros": [
         {
           "id": 11,
@@ -33,8 +32,7 @@
       "nome": "Esquadrao Fenix",
       "responsavel": "Mariana Costa",
       "email": "mariana@fpm.edu.br",
-      "sigla": "EF",
-      "cor": "linear-gradient(180deg, #ff9736 0%, #a54a04 100%)",
+      "modalidade": "Volei",
       "membros": [
         {
           "id": 21,
@@ -61,8 +59,7 @@
       "nome": "Relampago FPM",
       "responsavel": "Carlos Eduardo",
       "email": "carlos@fpm.edu.br",
-      "sigla": "RF",
-      "cor": "linear-gradient(180deg, #2fd6a6 0%, #0d6b53 100%)",
+      "modalidade": "Basquete",
       "membros": []
     },
     {
@@ -70,6 +67,7 @@
       "nome": "nome",
       "responsavel": "nome",
       "email": "user@example.com",
+      "modalidade": "Atletismo",
       "membros": [
         {
           "id": 401,
@@ -80,9 +78,7 @@
           "funcao": "membro"
         }
       ],
-      "icone": "icone",
-      "cor": "cor",
-      "sigla": "sigla"
+      "icone": "icone"
     }
   ],
   "confrontos": [

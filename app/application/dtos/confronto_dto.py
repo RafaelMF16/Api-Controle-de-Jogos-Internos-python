@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.domain.entities.confronto import StatusConfronto
+from app.domain.entities.equipe import ModalidadeEquipe
 
 
 class ConfrontoInput(BaseModel):
@@ -11,8 +12,8 @@ class ConfrontoInput(BaseModel):
     local: str = Field(min_length=2)
     golsA: int | None = None
     golsB: int | None = None
-    modalidade: str | None = None
-    status: StatusConfronto | None = StatusConfronto.AGENDADO
+    modalidade: ModalidadeEquipe
+    status: StatusConfronto = StatusConfronto.AGENDADO
     destaque: bool | None = None
     periodoAtual: str | None = None
     duracao: str | None = None
