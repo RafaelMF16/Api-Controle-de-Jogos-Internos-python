@@ -9,11 +9,19 @@ class ConfrontoService:
 
     def listar_confrontos(
         self,
+        busca: str | None = None,
         equipe: str | None = None,
         modalidade: str | None = None,
         status: StatusConfronto | None = None,
     ) -> list[Confronto]:
         confrontos = self.repository.listar()
+
+        if busca:
+            termo = busca.strip().lower()
+            confrontos = [
+                confronto for confronto in confrontos
+                if termo in confronto.equipeA.lower() or termo in confronto.equipeB.lower()
+            ]
 
         if equipe:
             confrontos = [

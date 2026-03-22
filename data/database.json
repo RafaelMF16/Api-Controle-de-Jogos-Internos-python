@@ -3,29 +3,30 @@
     {
       "id": 1,
       "nome": "Os Galaticos",
-      "responsavel": "Joao Pereira",
+      "responsavel": "Ronaldo",
       "email": "joao@fpm.edu.br",
       "modalidade": "Futsal",
       "membros": [
         {
           "id": 11,
           "nome": "Joao Pereira",
-          "funcao": "Capitao",
           "habilidades": [
             "Lideranca",
             "Passe"
-          ]
+          ],
+          "funcao": "Capitao"
         },
         {
           "id": 12,
           "nome": "Ana Carla",
-          "funcao": "Membro",
           "habilidades": [
             "Velocidade",
             "Ataque"
-          ]
+          ],
+          "funcao": "Membro"
         }
-      ]
+      ],
+      "icone": null
     },
     {
       "id": 2,
@@ -63,22 +64,39 @@
       "membros": []
     },
     {
-      "id": 4,
-      "nome": "nome",
-      "responsavel": "nome",
-      "email": "user@example.com",
-      "modalidade": "Atletismo",
+      "id": 5,
+      "nome": "Real madrid",
+      "responsavel": "Florentino Perez",
+      "email": "r@email.com",
+      "modalidade": "Futsal",
       "membros": [
         {
-          "id": 401,
-          "nome": "nome",
+          "id": 1774181230943,
+          "nome": "Vini jr",
           "habilidades": [
-            "força"
+            "Ataque",
+            "Velocidade",
+            "Passe",
+            "Drible",
+            "Finalizacao"
           ],
-          "funcao": "membro"
+          "funcao": "Capitao"
+        },
+        {
+          "id": 1774181282214,
+          "nome": "Valverde",
+          "habilidades": [
+            "Ataque",
+            "Lideranca",
+            "Passe",
+            "Velocidade",
+            "Resistencia",
+            "Finalizacao"
+          ],
+          "funcao": "Membro"
         }
       ],
-      "icone": "icone"
+      "icone": null
     }
   ],
   "confrontos": [
@@ -89,10 +107,14 @@
       "data": "12 Nov, 2024",
       "horario": "19:30",
       "local": "Quadra A",
+      "golsA": 2,
+      "golsB": 0,
       "modalidade": "Futsal",
-      "status": "agendado",
-      "golsA": null,
-      "golsB": null
+      "status": "encerrado",
+      "destaque": null,
+      "periodoAtual": null,
+      "duracao": null,
+      "fase": null
     },
     {
       "id": 2,
@@ -113,10 +135,62 @@
       "data": "15 Nov, 2024",
       "horario": "20:00",
       "local": "Arena Tech",
+      "golsA": 10,
+      "golsB": 0,
+      "modalidade": "Futsal",
+      "status": "encerrado",
+      "destaque": null,
+      "periodoAtual": null,
+      "duracao": null,
+      "fase": null
+    },
+    {
+      "id": 4,
+      "equipeA": "Os Galaticos",
+      "equipeB": "Esquadrao Fenix",
+      "data": "2026-03-19",
+      "horario": "22:28",
+      "local": "Quadra A",
+      "golsA": null,
+      "golsB": null,
       "modalidade": "Futsal",
       "status": "agendado",
+      "destaque": null,
+      "periodoAtual": null,
+      "duracao": null,
+      "fase": null
+    },
+    {
+      "id": 5,
+      "equipeA": "Os Galaticos",
+      "equipeB": "Relampago FPM",
+      "data": "2026-03-22",
+      "horario": "10:53",
+      "local": "Quadra A",
       "golsA": null,
-      "golsB": null
+      "golsB": null,
+      "modalidade": "Volei",
+      "status": "agendado",
+      "destaque": null,
+      "periodoAtual": null,
+      "duracao": null,
+      "fase": null
+    },
+    {
+      "id": 6,
+      "equipeA": "Os Galaticos",
+      "equipeB": "Esquadrao Fenix",
+      "data": "2026-03-22",
+      "horario": "11:00",
+      "local": "Estadio",
+      "golsA": null,
+      "golsB": null,
+      "modalidade": "Basquete",
+      "status": "agendado",
+      "destaque": null,
+      "periodoAtual": null,
+      "duracao": null,
+      "fase": null
     }
   ]
 }
