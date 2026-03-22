@@ -11,12 +11,14 @@ router = APIRouter(prefix="/confrontos", tags=["Confrontos"])
 # Lista confrontos e permite filtrar por equipe, modalidade ou status para as telas do sistema.
 @router.get("", response_model=list[Confronto], summary="Listar confrontos")
 def listar_confrontos(
+    busca: str | None = Query(default=None),
     equipe: str | None = Query(default=None),
     modalidade: str | None = Query(default=None),
     status_filtro: StatusConfronto | None = Query(default=None, alias="status"),
     service: ConfrontoService = Depends(get_confronto_service),
 ) -> list[Confronto]:
     return service.listar_confrontos(
+        busca=busca,
         equipe=equipe,
         modalidade=modalidade,
         status=status_filtro,
