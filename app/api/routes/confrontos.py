@@ -59,7 +59,7 @@ def atualizar_confronto(
     return confronto_atualizado
 
 
-# Remove um confronto do armazenamento em JSON para refletir a exclusao feita no sistema.
+# Remove um confronto persistido no Firestore para refletir a exclusao feita no sistema.
 @router.delete("/{confronto_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover confronto")
 def remover_confronto(confronto_id: int, service: ConfrontoService = Depends(get_confronto_service)) -> None:
     removeu = service.remover_confronto(confronto_id)

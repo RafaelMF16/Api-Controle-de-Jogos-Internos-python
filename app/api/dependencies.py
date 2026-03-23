@@ -6,23 +6,27 @@ from app.application.services.equipe_service import EquipeService
 from app.core.config import get_settings
 from app.domain.repositories.confronto_repository import ConfrontoRepository
 from app.domain.repositories.equipe_repository import EquipeRepository
-from app.infrastructure.persistence.json_db.json_database import JsonDatabase
-from app.infrastructure.repositories.json_confronto_repository import JsonConfrontoRepository
-from app.infrastructure.repositories.json_equipe_repository import JsonEquipeRepository
+from app.infrastructure.persistence.firestore.firestore_client import FirestoreDatabase
+from app.infrastructure.repositories.firestore_confronto_repository import FirestoreConfrontoRepository
+from app.infrastructure.repositories.firestore_equipe_repository import FirestoreEquipeRepository
 
 
 @lru_cache
-def get_database() -> JsonDatabase:
+def get_database() -> FirestoreDatabase:
     settings = get_settings()
-    return JsonDatabase(settings.database_file)
+    return FirestoreDatabase(
+        project_id=settings.google_cloud_project,
+        equipes_collection=settings.firestore_equipes_collection,
+        confrontos_collection=settings.firestore_confrontos_collection,
+    )
 
 
 def get_equipe_repository() -> EquipeRepository:
-    return JsonEquipeRepository(get_database())
+    return FirestoreEquipeRepository(get_database())
 
 
 def get_confronto_repository() -> ConfrontoRepository:
-    return JsonConfrontoRepository(get_database())
+    return FirestoreConfrontoRepository(get_database())
 
 
 def get_equipe_service() -> EquipeService:

@@ -42,7 +42,7 @@ def atualizar_equipe(
     return equipe_atualizada
 
 
-# Remove uma equipe cadastrada do arquivo JSON utilizado como persistencia temporaria.
+# Remove uma equipe cadastrada da colecao persistida no Firestore.
 @router.delete("/{equipe_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover equipe")
 def remover_equipe(equipe_id: int, service: EquipeService = Depends(get_equipe_service)) -> None:
     removeu = service.remover_equipe(equipe_id)
