@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_confronto_service
+from app.api.dependencies import get_confronto_service, require_roles
 from app.application.dtos.confronto_dto import ConfrontoInput
 from app.application.services.confronto_service import ConfrontoService
 from app.domain.entities.confronto import Confronto, StatusConfronto
+from app.domain.entities.usuario import RoleUsuario, Usuario
 
 router = APIRouter(prefix="/confrontos", tags=["Confrontos"])
 
@@ -42,7 +43,11 @@ def obter_confronto(confronto_id: int, service: ConfrontoService = Depends(get_c
 
 # Cria um novo confronto seguindo o mesmo formato utilizado pelo front-end Angular.
 @router.post("", response_model=Confronto, status_code=status.HTTP_201_CREATED, summary="Criar confronto")
-def criar_confronto(payload: ConfrontoInput, service: ConfrontoService = Depends(get_confronto_service)) -> Confronto:
+def criar_confronto(
+    payload: ConfrontoInput,
+    _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
+    service: ConfrontoService = Depends(get_confronto_service),
+) -> Confronto:
     return service.criar_confronto(payload)
 
 
@@ -51,6 +56,7 @@ def criar_confronto(payload: ConfrontoInput, service: ConfrontoService = Depends
 def atualizar_confronto(
     confronto_id: int,
     payload: ConfrontoInput,
+    _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
     service: ConfrontoService = Depends(get_confronto_service),
 ) -> Confronto:
     confronto_atualizado = service.atualizar_confronto(confronto_id, payload)
@@ -61,7 +67,11 @@ def atualizar_confronto(
 
 # Remove um confronto persistido no Firestore para refletir a exclusao feita no sistema.
 @router.delete("/{confronto_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover confronto")
-def remover_confronto(confronto_id: int, service: ConfrontoService = Depends(get_confronto_service)) -> None:
+def remover_confronto(
+    confronto_id: int,
+    _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
+    service: ConfrontoService = Depends(get_confronto_service),
+) -> None:
     removeu = service.remover_confronto(confronto_id)
     if not removeu:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")

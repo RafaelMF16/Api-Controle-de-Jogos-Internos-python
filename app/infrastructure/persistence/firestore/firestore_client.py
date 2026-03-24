@@ -10,10 +10,12 @@ class FirestoreDatabase:
         project_id: str | None,
         equipes_collection: str,
         confrontos_collection: str,
+        usuarios_collection: str,
     ) -> None:
         self.project_id = project_id
         self.equipes_collection_name = equipes_collection
         self.confrontos_collection_name = confrontos_collection
+        self.usuarios_collection_name = usuarios_collection
 
     @cached_property
     def client(self) -> Client:
@@ -28,3 +30,7 @@ class FirestoreDatabase:
     @property
     def confrontos_collection(self) -> CollectionReference:
         return self.client.collection(self.confrontos_collection_name)
+
+    @property
+    def usuarios_collection(self) -> CollectionReference:
+        return self.client.collection(self.usuarios_collection_name)
