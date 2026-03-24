@@ -7,7 +7,7 @@ API em Python para servir o projeto de controle dos jogos internos, organizada e
 - FastAPI
 - Uvicorn
 - Pydantic
-- Persistencia inicial em arquivo JSON
+- Google Cloud Firestore
 
 ## Estrutura
 
@@ -16,7 +16,7 @@ API em Python para servir o projeto de controle dos jogos internos, organizada e
 - `app/domain`: entidades e contratos
 - `app/infrastructure`: persistencia e implementacoes concretas
 - `app/core`: configuracoes da aplicacao
-- `data`: arquivo JSON usado como banco temporario
+- `app/infrastructure/persistence/firestore`: cliente e acesso ao Firestore
 
 ## Endpoints principais
 
@@ -44,13 +44,20 @@ API em Python para servir o projeto de controle dos jogos internos, organizada e
 pip install -r requirements.txt
 ```
 
-4. Execute a API:
+4. Configure as credenciais do Google Cloud:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/caminho/para/service-account.json
+export GOOGLE_CLOUD_PROJECT=seu-projeto
+```
+
+5. Execute a API:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-5. Acesse a documentacao interativa:
+6. Acesse a documentacao interativa:
 
 ```text
 http://127.0.0.1:8000/docs
@@ -58,7 +65,7 @@ http://127.0.0.1:8000/docs
 
 ## Observacoes
 
-- O arquivo `data/database.json` funciona como banco temporario.
 - A API ja esta preparada para um front Angular consumir com CORS habilitado.
 - O contrato dos endpoints foi ajustado para refletir os objetos usados no front-end Angular.
-- A persistencia em JSON e simples de entender agora e pode ser trocada depois por banco relacional sem alterar as rotas.
+- As colecoes padrao no Firestore sao `equipes` e `confrontos`, mas podem ser alteradas por variavel de ambiente.
+- Em Cloud Run, o ideal e usar credenciais padrao do ambiente e informar o projeto pelo `GOOGLE_CLOUD_PROJECT`.
