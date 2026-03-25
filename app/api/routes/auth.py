@@ -6,7 +6,7 @@ from app.application.dtos.usuario_dto import UsuarioOutput
 from app.application.services.auth_service import AuthService
 from app.domain.entities.usuario import Usuario
 
-router = APIRouter(prefix="/auth", tags=["Autenticacao"])
+router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
 @router.post("/login", response_model=AuthResponse, summary="Realizar login")
@@ -18,6 +18,6 @@ def login(payload: LoginInput, service: AuthService = Depends(get_auth_service))
     )
 
 
-@router.get("/me", response_model=UsuarioOutput, summary="Obter usuario autenticado")
+@router.get("/me", response_model=UsuarioOutput, summary="Obter usuário autenticado")
 def me(current_user: Usuario = Depends(get_current_user)) -> UsuarioOutput:
     return UsuarioOutput.from_entity(current_user)

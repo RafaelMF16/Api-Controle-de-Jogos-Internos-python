@@ -13,7 +13,7 @@ class UsuarioBaseInput(BaseModel):
     @model_validator(mode="after")
     def validar_capitao(self) -> "UsuarioBaseInput":
         if self.role == RoleUsuario.CAPITAO and self.equipeId is None:
-            raise ValueError("Capitao precisa estar vinculado a uma equipe.")
+            raise ValueError("Capitão precisa estar vinculado a uma equipe.")
 
         if self.role != RoleUsuario.CAPITAO:
             self.equipeId = None

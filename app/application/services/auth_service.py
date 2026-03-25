@@ -17,13 +17,13 @@ class AuthService:
         if usuario is None or not verify_password(senha, usuario.senhaHash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Credenciais invalidas.",
+                detail="Credenciais inválidas.",
             )
 
         if not usuario.ativo:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Usuario inativo.",
+                detail="Usuário inativo.",
             )
 
         token = create_access_token(
@@ -48,21 +48,21 @@ class AuthService:
         except InvalidTokenError as exc:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token invalido ou expirado.",
+                detail="Token inválido ou expirado.",
             ) from exc
 
         subject = payload.get("sub")
         if subject is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token invalido.",
+                detail="Token inválido.",
             )
 
         usuario = self.repository.obter_por_id(int(subject))
         if usuario is None or not usuario.ativo:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario nao autorizado.",
+                detail="Usuário não autorizado.",
             )
 
         return usuario

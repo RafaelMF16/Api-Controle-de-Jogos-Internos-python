@@ -37,7 +37,7 @@ def listar_proximos_confrontos(service: ConfrontoService = Depends(get_confronto
 def obter_confronto(confronto_id: int, service: ConfrontoService = Depends(get_confronto_service)) -> Confronto:
     confronto = service.obter_confronto(confronto_id)
     if confronto is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto não encontrado.")
     return confronto
 
 
@@ -61,7 +61,7 @@ def atualizar_confronto(
 ) -> Confronto:
     confronto_atualizado = service.atualizar_confronto(confronto_id, payload)
     if confronto_atualizado is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto não encontrado.")
     return confronto_atualizado
 
 
@@ -74,4 +74,4 @@ def remover_confronto(
 ) -> None:
     removeu = service.remover_confronto(confronto_id)
     if not removeu:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto não encontrado.")

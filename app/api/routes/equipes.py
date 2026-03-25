@@ -20,7 +20,7 @@ def listar_equipes(service: EquipeService = Depends(get_equipe_service)) -> list
 def obter_equipe(equipe_id: int, service: EquipeService = Depends(get_equipe_service)) -> Equipe:
     equipe = service.obter_equipe(equipe_id)
     if equipe is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipe nao encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipe não encontrada.")
     return equipe
 
 
@@ -43,14 +43,14 @@ def atualizar_equipe(
     service: EquipeService = Depends(get_equipe_service),
 ) -> Equipe:
     if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.CAPITAO}:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
 
     if current_user.role == RoleUsuario.CAPITAO and current_user.equipeId != equipe_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitao so pode editar a propria equipe.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitão só pode editar a própria equipe.")
 
     equipe_atualizada = service.atualizar_equipe(equipe_id, payload)
     if equipe_atualizada is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipe nao encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipe não encontrada.")
     return equipe_atualizada
 
 
@@ -63,4 +63,4 @@ def remover_equipe(
 ) -> None:
     removeu = service.remover_equipe(equipe_id)
     if not removeu:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipe nao encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipe não encontrada.")

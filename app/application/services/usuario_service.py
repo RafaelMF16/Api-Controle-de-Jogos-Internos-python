@@ -24,7 +24,7 @@ class UsuarioService:
         if existente is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Ja existe um usuario com este e-mail.",
+                detail="Já existe um usuário com este e-mail.",
             )
 
         usuario = Usuario(
@@ -47,7 +47,7 @@ class UsuarioService:
         if existente is not None and existente.id != usuario_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Ja existe um usuario com este e-mail.",
+                detail="Já existe um usuário com este e-mail.",
             )
 
         usuario_atualizado = Usuario(

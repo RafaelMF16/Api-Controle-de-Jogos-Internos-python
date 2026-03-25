@@ -75,7 +75,7 @@ def get_current_user(
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Autenticacao obrigatoria.",
+            detail="Autenticação obrigatória.",
         )
 
     return auth_service.obter_usuario_atual(credentials.credentials)
@@ -86,7 +86,7 @@ def require_roles(*roles: RoleUsuario) -> Callable[[Usuario], Usuario]:
         if current_user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Voce nao tem permissao para esta acao.",
+                detail="Você não tem permissão para esta ação.",
             )
         return current_user
 
