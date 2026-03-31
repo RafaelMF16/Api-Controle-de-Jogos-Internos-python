@@ -12,8 +12,8 @@ class AuthService:
         self.repository = repository
         self.settings = settings
 
-    def autenticar(self, email: str, senha: str) -> tuple[str, Usuario]:
-        usuario = self.repository.obter_por_email(email)
+    def autenticar(self, username: str, senha: str) -> tuple[str, Usuario]:
+        usuario = self.repository.obter_por_username(username.strip().lower())
         if usuario is None or not verify_password(senha, usuario.senhaHash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

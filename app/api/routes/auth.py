@@ -11,7 +11,7 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 @router.post("/login", response_model=AuthResponse, summary="Realizar login")
 def login(payload: LoginInput, service: AuthService = Depends(get_auth_service)) -> AuthResponse:
-    token, usuario = service.autenticar(payload.email, payload.senha)
+    token, usuario = service.autenticar(payload.username, payload.senha)
     return AuthResponse(
         accessToken=token,
         user=UsuarioOutput.from_entity(usuario),

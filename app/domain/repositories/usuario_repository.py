@@ -13,7 +13,7 @@ class UsuarioRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def obter_por_email(self, email: str) -> Usuario | None:
+    def obter_por_username(self, username: str) -> Usuario | None:
         raise NotImplementedError
 
     @abstractmethod

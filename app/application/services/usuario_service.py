@@ -16,21 +16,21 @@ class UsuarioService:
     def obter_usuario(self, usuario_id: int) -> Usuario | None:
         return self.repository.obter_por_id(usuario_id)
 
-    def obter_usuario_por_email(self, email: str) -> Usuario | None:
-        return self.repository.obter_por_email(email)
+    def obter_usuario_por_username(self, username: str) -> Usuario | None:
+        return self.repository.obter_por_username(username)
 
     def criar_usuario(self, payload: UsuarioCreateInput) -> Usuario:
-        existente = self.repository.obter_por_email(payload.email)
+        existente = self.repository.obter_por_username(payload.username)
         if existente is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe um usuário com este e-mail.",
+                detail="Já existe um usuário com este nome de usuário.",
             )
 
         usuario = Usuario(
             id=self._proximo_id_usuario(),
             nome=payload.nome,
-            email=payload.email,
+            username=payload.username,
             role=payload.role,
             equipeId=payload.equipeId,
             ativo=payload.ativo,
@@ -43,17 +43,17 @@ class UsuarioService:
         if atual is None:
             return None
 
-        existente = self.repository.obter_por_email(payload.email)
+        existente = self.repository.obter_por_username(payload.username)
         if existente is not None and existente.id != usuario_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe um usuário com este e-mail.",
+                detail="Já existe um usuário com este nome de usuário.",
             )
 
         usuario_atualizado = Usuario(
             id=usuario_id,
             nome=payload.nome,
-            email=payload.email,
+            username=payload.username,
             role=payload.role,
             equipeId=payload.equipeId,
             ativo=payload.ativo,
@@ -67,10 +67,10 @@ class UsuarioService:
     def ensure_bootstrap_admin(
         self,
         nome: str | None,
-        email: str | None,
+        username: str | None,
         senha: str | None,
     ) -> Usuario | None:
-        if not nome or not email or not senha:
+        if not nome or not username or not senha:
             return None
 
         if self.repository.listar():
@@ -80,7 +80,7 @@ class UsuarioService:
             Usuario(
                 id=1,
                 nome=nome,
-                email=email,
+                username=username.strip().lower(),
                 role=RoleUsuario.ADMIN,
                 equipeId=None,
                 ativo=True,

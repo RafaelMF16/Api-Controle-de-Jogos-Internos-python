@@ -1,11 +1,11 @@
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
 
 class UsuarioBaseInput(BaseModel):
     nome: str = Field(min_length=2)
-    email: EmailStr
+    username: str = Field(min_length=3, pattern=r"^[a-zA-Z0-9._-]+$")
     role: RoleUsuario
     equipeId: int | None = None
     ativo: bool = True
@@ -18,6 +18,7 @@ class UsuarioBaseInput(BaseModel):
         if self.role != RoleUsuario.CAPITAO:
             self.equipeId = None
 
+        self.username = self.username.strip().lower()
         return self
 
 
@@ -32,7 +33,7 @@ class UsuarioUpdateInput(UsuarioBaseInput):
 class UsuarioOutput(BaseModel):
     id: int
     nome: str
-    email: EmailStr
+    username: str
     role: RoleUsuario
     equipeId: int | None = None
     ativo: bool = True
@@ -42,7 +43,7 @@ class UsuarioOutput(BaseModel):
         return cls(
             id=usuario.id,
             nome=usuario.nome,
-            email=usuario.email,
+            username=usuario.username,
             role=usuario.role,
             equipeId=usuario.equipeId,
             ativo=usuario.ativo,

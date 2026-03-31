@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class RoleUsuario(str, Enum):
@@ -13,7 +13,7 @@ class RoleUsuario(str, Enum):
 class Usuario(BaseModel):
     id: int
     nome: str = Field(min_length=2)
-    email: EmailStr
+    username: str = Field(min_length=3, pattern=r"^[a-zA-Z0-9._-]+$")
     role: RoleUsuario
     equipeId: int | None = None
     ativo: bool = True

@@ -1,7 +1,7 @@
+import json
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-import json
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class Settings:
     jwt_algorithm: str
     access_token_expire_minutes: int
     bootstrap_admin_name: str | None
-    bootstrap_admin_email: str | None
+    bootstrap_admin_username: str | None
     bootstrap_admin_password: str | None
 
 
@@ -51,6 +51,6 @@ def get_settings() -> Settings:
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")),
         bootstrap_admin_name=os.getenv("BOOTSTRAP_ADMIN_NAME"),
-        bootstrap_admin_email=os.getenv("BOOTSTRAP_ADMIN_EMAIL"),
+        bootstrap_admin_username=os.getenv("BOOTSTRAP_ADMIN_USERNAME"),
         bootstrap_admin_password=os.getenv("BOOTSTRAP_ADMIN_PASSWORD"),
     )

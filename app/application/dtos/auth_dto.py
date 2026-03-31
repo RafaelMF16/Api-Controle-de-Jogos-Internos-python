@@ -1,10 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 from app.application.dtos.usuario_dto import UsuarioOutput
 
 
 class LoginInput(BaseModel):
-    email: EmailStr
+    username: str = Field(min_length=3)
     senha: str = Field(min_length=6)
 
 

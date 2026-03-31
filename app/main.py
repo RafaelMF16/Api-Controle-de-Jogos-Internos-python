@@ -19,10 +19,11 @@ settings = get_settings()
 async def lifespan(_: FastAPI):
     get_usuario_service().ensure_bootstrap_admin(
         nome=settings.bootstrap_admin_name,
-        email=settings.bootstrap_admin_email,
+        username=settings.bootstrap_admin_username,
         senha=settings.bootstrap_admin_password,
     )
     yield
+
 
 app = FastAPI(
     title=settings.app_name,

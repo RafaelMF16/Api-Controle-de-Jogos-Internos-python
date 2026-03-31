@@ -9,18 +9,19 @@ class FirestoreUsuarioRepository(UsuarioRepository):
 
     def listar(self) -> list[Usuario]:
         documentos = self.collection.order_by("id").stream()
-        return [Usuario.model_validate(documento.to_dict()) for documento in documentos]
+        return [self._to_usuario(documento.to_dict()) for documento in documentos]
 
     def obter_por_id(self, usuario_id: int) -> Usuario | None:
         documento = self.collection.document(str(usuario_id)).get()
         if not documento.exists:
             return None
-        return Usuario.model_validate(documento.to_dict())
+        return self._to_usuario(documento.to_dict())
 
-    def obter_por_email(self, email: str) -> Usuario | None:
-        documentos = self.collection.where("email", "==", email).limit(1).stream()
+    def obter_por_username(self, username: str) -> Usuario | None:
+        username_normalizado = self._normalize_username(username)
+        documentos = self.collection.where("username", "==", username_normalizado).limit(1).stream()
         for documento in documentos:
-            return Usuario.model_validate(documento.to_dict())
+            return self._to_usuario(documento.to_dict())
         return None
 
     def criar(self, usuario: Usuario) -> Usuario:
@@ -42,3 +43,18 @@ class FirestoreUsuarioRepository(UsuarioRepository):
 
         referencia.delete()
         return True
+
+    def _to_usuario(self, payload: dict | None) -> Usuario:
+        dados = dict(payload or {})
+        username = dados.get("username")
+
+        if not username and dados.get("email"):
+            username = str(dados["email"]).strip().lower()
+
+        dados["username"] = self._normalize_username(username or "")
+        dados.pop("email", None)
+        return Usuario.model_validate(dados)
+
+    @staticmethod
+    def _normalize_username(username: str) -> str:
+        return username.strip().lower()
