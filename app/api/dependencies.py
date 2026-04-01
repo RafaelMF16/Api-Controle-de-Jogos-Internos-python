@@ -5,8 +5,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
-from app.application.services.dashboard_service import DashboardService
 from app.application.services.confronto_service import ConfrontoService
+from app.application.services.dashboard_service import DashboardService
 from app.application.services.equipe_service import EquipeService
 from app.application.services.usuario_service import UsuarioService
 from app.core.config import get_settings

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.domain.entities.equipe import ModalidadeEquipe
 
@@ -12,8 +12,22 @@ class MembroInput(BaseModel):
 
 class EquipeInput(BaseModel):
     nome: str = Field(min_length=2)
-    responsavel: str = Field(min_length=2)
-    email: EmailStr
+    responsavel: str | None = None
+    curso: str | None = None
+    periodo: str | None = None
     modalidade: ModalidadeEquipe
     membros: list[MembroInput] = Field(default_factory=list)
+    usuarioId: int | None = None
     icone: str | None = None
+
+    @model_validator(mode="after")
+    def validar_por_categoria(self):
+        if self.modalidade == ModalidadeEquipe.NATACAO:
+            self.responsavel = None
+            self.membros = []
+            return self
+
+        if not self.curso or not self.periodo:
+            raise ValueError("Esportes coletivos exigem curso e período.")
+
+        return self
