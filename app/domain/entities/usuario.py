@@ -16,5 +16,7 @@ class Usuario(BaseModel):
     username: str = Field(min_length=3, pattern=r"^[a-zA-Z0-9._-]+$")
     role: RoleUsuario
     equipeId: int | None = None
+    curso: str | None = None
+    periodo: str | None = None
     ativo: bool = True
     senhaHash: str = Field(min_length=1)

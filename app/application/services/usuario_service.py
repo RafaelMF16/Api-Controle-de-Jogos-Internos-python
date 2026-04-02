@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 
-from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioUpdateInput
+from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioUpdateInput, VisitorRegisterInput
 from app.core.security import hash_password
 from app.domain.entities.usuario import RoleUsuario, Usuario
 from app.domain.repositories.usuario_repository import UsuarioRepository
@@ -20,20 +20,33 @@ class UsuarioService:
         return self.repository.obter_por_username(username)
 
     def criar_usuario(self, payload: UsuarioCreateInput) -> Usuario:
-        existente = self.repository.obter_por_username(payload.username)
-        if existente is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe um usuário com este nome de usuário.",
-            )
+        self._garantir_username_disponivel(payload.username)
 
         usuario = Usuario(
             id=self._proximo_id_usuario(),
             nome=payload.nome,
             username=payload.username,
             role=payload.role,
-            equipeId=payload.equipeId,
+            equipeId=None,
+            curso=payload.curso,
+            periodo=payload.periodo,
             ativo=payload.ativo,
+            senhaHash=hash_password(payload.senha),
+        )
+        return self.repository.criar(usuario)
+
+    def registrar_visitante(self, payload: VisitorRegisterInput) -> Usuario:
+        self._garantir_username_disponivel(payload.username)
+
+        usuario = Usuario(
+            id=self._proximo_id_usuario(),
+            nome=payload.nome,
+            username=payload.username,
+            role=RoleUsuario.VISITANTE,
+            equipeId=None,
+            curso=payload.curso,
+            periodo=payload.periodo,
+            ativo=True,
             senhaHash=hash_password(payload.senha),
         )
         return self.repository.criar(usuario)
@@ -50,14 +63,38 @@ class UsuarioService:
                 detail="Já existe um usuário com este nome de usuário.",
             )
 
+        equipe_id = atual.equipeId if payload.role == RoleUsuario.CAPITAO else None
+        curso = payload.curso if payload.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO} else None
+        periodo = payload.periodo if payload.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO} else None
+
         usuario_atualizado = Usuario(
             id=usuario_id,
             nome=payload.nome,
             username=payload.username,
             role=payload.role,
-            equipeId=payload.equipeId,
+            equipeId=equipe_id,
+            curso=curso,
+            periodo=periodo,
             ativo=payload.ativo,
             senhaHash=hash_password(payload.senha) if payload.senha else atual.senhaHash,
+        )
+        return self.repository.atualizar(usuario_id, usuario_atualizado)
+
+    def vincular_equipe(self, usuario_id: int, equipe_id: int) -> Usuario | None:
+        atual = self.repository.obter_por_id(usuario_id)
+        if atual is None:
+            return None
+
+        usuario_atualizado = Usuario(
+            id=atual.id,
+            nome=atual.nome,
+            username=atual.username,
+            role=atual.role,
+            equipeId=equipe_id,
+            curso=atual.curso,
+            periodo=atual.periodo,
+            ativo=atual.ativo,
+            senhaHash=atual.senhaHash,
         )
         return self.repository.atualizar(usuario_id, usuario_atualizado)
 
@@ -83,6 +120,8 @@ class UsuarioService:
                 username=username.strip().lower(),
                 role=RoleUsuario.ADMIN,
                 equipeId=None,
+                curso=None,
+                periodo=None,
                 ativo=True,
                 senhaHash=hash_password(senha),
             )
@@ -91,3 +130,11 @@ class UsuarioService:
     def _proximo_id_usuario(self) -> int:
         usuarios = self.repository.listar()
         return max((usuario.id for usuario in usuarios), default=0) + 1
+
+    def _garantir_username_disponivel(self, username: str) -> None:
+        existente = self.repository.obter_por_username(username)
+        if existente is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Já existe um usuário com este nome de usuário.",
+            )

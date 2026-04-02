@@ -8,15 +8,18 @@ class UsuarioBaseInput(BaseModel):
     username: str = Field(min_length=3, pattern=r"^[a-zA-Z0-9._-]+$")
     role: RoleUsuario
     equipeId: int | None = None
+    curso: str | None = None
+    periodo: str | None = None
     ativo: bool = True
 
     @model_validator(mode="after")
-    def validar_capitao(self) -> "UsuarioBaseInput":
-        if self.role == RoleUsuario.CAPITAO and self.equipeId is None:
-            raise ValueError("Capitão precisa estar vinculado a uma equipe.")
-
+    def normalizar_campos(self) -> "UsuarioBaseInput":
         if self.role != RoleUsuario.CAPITAO:
             self.equipeId = None
+
+        if self.role not in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
+            self.curso = None
+            self.periodo = None
 
         self.username = self.username.strip().lower()
         return self
@@ -30,12 +33,31 @@ class UsuarioUpdateInput(UsuarioBaseInput):
     senha: str | None = Field(default=None, min_length=6)
 
 
+class VisitorRegisterInput(BaseModel):
+    nome: str = Field(min_length=2)
+    username: str = Field(min_length=3, pattern=r"^[a-zA-Z0-9._-]+$")
+    senha: str = Field(min_length=6)
+    curso: str = Field(min_length=2)
+    periodo: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def normalizar_campos(self) -> "VisitorRegisterInput":
+        partes_nome = self.nome.strip().split()
+        if len(partes_nome) < 2:
+            raise ValueError("Informe nome e sobrenome.")
+
+        self.username = self.username.strip().lower()
+        return self
+
+
 class UsuarioOutput(BaseModel):
     id: int
     nome: str
     username: str
     role: RoleUsuario
     equipeId: int | None = None
+    curso: str | None = None
+    periodo: str | None = None
     ativo: bool = True
 
     @classmethod
@@ -46,5 +68,7 @@ class UsuarioOutput(BaseModel):
             username=usuario.username,
             role=usuario.role,
             equipeId=usuario.equipeId,
+            curso=usuario.curso,
+            periodo=usuario.periodo,
             ativo=usuario.ativo,
         )
