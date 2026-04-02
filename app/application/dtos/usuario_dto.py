@@ -17,7 +17,7 @@ class UsuarioBaseInput(BaseModel):
         if self.role != RoleUsuario.CAPITAO:
             self.equipeId = None
 
-        if self.role != RoleUsuario.VISITANTE:
+        if self.role not in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             self.curso = None
             self.periodo = None
 

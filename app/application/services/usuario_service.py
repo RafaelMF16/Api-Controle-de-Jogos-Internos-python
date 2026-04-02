@@ -64,8 +64,8 @@ class UsuarioService:
             )
 
         equipe_id = atual.equipeId if payload.role == RoleUsuario.CAPITAO else None
-        curso = payload.curso if payload.role == RoleUsuario.VISITANTE else None
-        periodo = payload.periodo if payload.role == RoleUsuario.VISITANTE else None
+        curso = payload.curso if payload.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO} else None
+        periodo = payload.periodo if payload.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO} else None
 
         usuario_atualizado = Usuario(
             id=usuario_id,

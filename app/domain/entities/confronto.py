@@ -20,6 +20,7 @@ class Confronto(BaseModel):
     local: str = Field(min_length=2)
     golsA: int | None = None
     golsB: int | None = None
+    vencedor: str | None = None
     modalidade: ModalidadeEquipe
     status: StatusConfronto = StatusConfronto.AGENDADO
     destaque: bool | None = None

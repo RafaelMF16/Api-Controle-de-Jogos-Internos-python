@@ -31,16 +31,22 @@ def criar_equipe(
     usuario_service: UsuarioService = Depends(get_usuario_service),
 ) -> Equipe:
     if payload.modalidade == ModalidadeEquipe.NATACAO:
-        if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.VISITANTE}:
+        if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
 
-        if current_user.role == RoleUsuario.VISITANTE:
+        if current_user.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             if not current_user.curso or not current_user.periodo:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Complete seu cadastro de visitante para se inscrever.")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Complete seu cadastro com curso e período para se inscrever.",
+                )
 
             existente = service.obter_inscricao_individual(current_user.id, payload.modalidade)
             if existente is not None:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Você já possui inscrição nessa modalidade.")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Você já possui inscrição nessa modalidade.",
+                )
 
             payload = payload.model_copy(
                 update={
@@ -58,20 +64,20 @@ def criar_equipe(
     if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.CAPITAO}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
 
-    if current_user.role == RoleUsuario.CAPITAO:
-        if current_user.equipeId is not None:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitão só pode cadastrar uma equipe.")
+    if current_user.role == RoleUsuario.CAPITAO and current_user.equipeId is not None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitão só pode cadastrar uma equipe.")
 
     payload_ajustado = payload.model_copy(
         update={
             "responsavel": current_user.nome,
+            "periodo": current_user.periodo if current_user.role == RoleUsuario.CAPITAO and current_user.periodo else payload.periodo,
             "usuarioId": None,
         }
     )
     equipe = service.criar_equipe(payload_ajustado)
 
     if current_user.role == RoleUsuario.CAPITAO:
-        usuario_service.vincular_equipe(current_user.id, equipe.id)
+      usuario_service.vincular_equipe(current_user.id, equipe.id)
 
     return equipe
 
@@ -88,9 +94,13 @@ def atualizar_equipe(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro não encontrado.")
 
     if equipe_atual.modalidade == ModalidadeEquipe.NATACAO:
-        if current_user.role == RoleUsuario.VISITANTE:
+        if current_user.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             if equipe_atual.usuarioId != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você só pode editar a própria inscrição.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Você só pode editar a própria inscrição.",
+                )
+
             payload = payload.model_copy(
                 update={
                     "nome": current_user.nome,
@@ -120,7 +130,10 @@ def atualizar_equipe(
     if payload.modalidade == ModalidadeEquipe.NATACAO and payload.usuarioId is not None:
         existente = service.obter_inscricao_individual(payload.usuarioId, payload.modalidade)
         if existente is not None and existente.id != equipe_id:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe uma inscrição nessa modalidade para este usuário.")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Já existe uma inscrição nessa modalidade para este usuário.",
+            )
 
     equipe_atualizada = service.atualizar_equipe(equipe_id, payload)
     if equipe_atualizada is None:
