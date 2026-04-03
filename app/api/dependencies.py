@@ -9,6 +9,7 @@ from app.application.services.confronto_service import ConfrontoService
 from app.application.services.dashboard_service import DashboardService
 from app.application.services.equipe_service import EquipeService
 from app.application.services.usuario_service import UsuarioService
+from app.core.cache import MemoryCache
 from app.core.config import get_settings
 from app.domain.entities.usuario import RoleUsuario, Usuario
 from app.domain.repositories.confronto_repository import ConfrontoRepository
@@ -45,26 +46,33 @@ def get_usuario_repository() -> UsuarioRepository:
     return FirestoreUsuarioRepository(get_database())
 
 
+@lru_cache
+def get_cache() -> MemoryCache:
+    return MemoryCache()
+
+
 def get_equipe_service() -> EquipeService:
-    return EquipeService(get_equipe_repository())
+    return EquipeService(get_equipe_repository(), get_cache(), get_settings())
 
 
 def get_confronto_service() -> ConfrontoService:
-    return ConfrontoService(get_confronto_repository())
+    return ConfrontoService(get_confronto_repository(), get_cache(), get_settings())
 
 
 def get_usuario_service() -> UsuarioService:
-    return UsuarioService(get_usuario_repository())
+    return UsuarioService(get_usuario_repository(), get_cache(), get_settings())
 
 
 def get_auth_service() -> AuthService:
-    return AuthService(get_usuario_repository(), get_settings())
+    return AuthService(get_usuario_repository(), get_settings(), get_cache())
 
 
 def get_dashboard_service() -> DashboardService:
     return DashboardService(
         equipe_repository=get_equipe_repository(),
         confronto_repository=get_confronto_repository(),
+        cache=get_cache(),
+        settings=get_settings(),
     )
 
 
