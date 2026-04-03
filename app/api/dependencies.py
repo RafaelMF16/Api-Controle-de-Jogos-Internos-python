@@ -5,9 +5,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
+from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
 from app.application.services.dashboard_service import DashboardService
 from app.application.services.equipe_service import EquipeService
+from app.application.services.heuristic_prediction_provider import HeuristicPredictionProvider
+from app.application.services.prediction_provider import PredictionProvider
 from app.application.services.usuario_service import UsuarioService
 from app.core.cache import MemoryCache
 from app.core.config import get_settings
@@ -57,6 +60,20 @@ def get_equipe_service() -> EquipeService:
 
 def get_confronto_service() -> ConfrontoService:
     return ConfrontoService(get_confronto_repository(), get_cache(), get_settings())
+
+
+def get_prediction_provider() -> PredictionProvider:
+    settings = get_settings()
+    return HeuristicPredictionProvider(model_name=settings.prediction_model)
+
+
+def get_confronto_prediction_service() -> ConfrontoPredictionService:
+    return ConfrontoPredictionService(
+        confronto_repository=get_confronto_repository(),
+        equipe_repository=get_equipe_repository(),
+        provider=get_prediction_provider(),
+        cache=get_cache(),
+    )
 
 
 def get_usuario_service() -> UsuarioService:
