@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import get_current_user, get_equipe_service, get_usuario_service, require_roles
 from app.application.dtos.equipe_dto import EquipeInput
+from app.application.dtos.pagination_dto import PaginatedResponse, build_paginated_response
 from app.application.services.equipe_service import EquipeService
 from app.application.services.usuario_service import UsuarioService
 from app.domain.entities.equipe import Equipe, ModalidadeEquipe
@@ -10,9 +11,15 @@ from app.domain.entities.usuario import RoleUsuario, Usuario
 router = APIRouter(prefix="/equipes", tags=["Equipes"])
 
 
-@router.get("", response_model=list[Equipe], summary="Listar equipes")
-def listar_equipes(service: EquipeService = Depends(get_equipe_service)) -> list[Equipe]:
-    return service.listar_equipes()
+@router.get("", response_model=PaginatedResponse[Equipe], summary="Listar equipes")
+def listar_equipes(
+    categoria: str | None = Query(default=None, pattern="^(coletivo|individual)$"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=500),
+    service: EquipeService = Depends(get_equipe_service),
+) -> PaginatedResponse[Equipe]:
+    equipes = service.listar_equipes(categoria=categoria)
+    return build_paginated_response(equipes, page, page_size)
 
 
 @router.get("/{equipe_id}", response_model=Equipe, summary="Obter equipe por id")
@@ -77,7 +84,7 @@ def criar_equipe(
     equipe = service.criar_equipe(payload_ajustado)
 
     if current_user.role == RoleUsuario.CAPITAO:
-      usuario_service.vincular_equipe(current_user.id, equipe.id)
+        usuario_service.vincular_equipe(current_user.id, equipe.id)
 
     return equipe
 

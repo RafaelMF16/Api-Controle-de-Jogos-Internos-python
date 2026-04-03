@@ -17,6 +17,8 @@ class Settings:
     jwt_secret_key: str
     jwt_algorithm: str
     access_token_expire_minutes: int
+    data_cache_ttl_seconds: int
+    dashboard_cache_ttl_seconds: int
     bootstrap_admin_name: str | None
     bootstrap_admin_username: str | None
     bootstrap_admin_password: str | None
@@ -50,6 +52,8 @@ def get_settings() -> Settings:
         jwt_secret_key=os.getenv("JWT_SECRET_KEY", "troque-esta-chave-em-producao"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")),
+        data_cache_ttl_seconds=int(os.getenv("DATA_CACHE_TTL_SECONDS", "30")),
+        dashboard_cache_ttl_seconds=int(os.getenv("DASHBOARD_CACHE_TTL_SECONDS", "20")),
         bootstrap_admin_name=os.getenv("BOOTSTRAP_ADMIN_NAME"),
         bootstrap_admin_username=os.getenv("BOOTSTRAP_ADMIN_USERNAME"),
         bootstrap_admin_password=os.getenv("BOOTSTRAP_ADMIN_PASSWORD"),

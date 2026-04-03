@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import get_current_user, get_usuario_service, require_roles
+from app.application.dtos.pagination_dto import PaginatedResponse, build_paginated_response
 from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioOutput, UsuarioUpdateInput
 from app.application.services.usuario_service import UsuarioService
 from app.domain.entities.usuario import RoleUsuario, Usuario
@@ -8,12 +9,15 @@ from app.domain.entities.usuario import RoleUsuario, Usuario
 router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 
 
-@router.get("", response_model=list[UsuarioOutput], summary="Listar usuários")
+@router.get("", response_model=PaginatedResponse[UsuarioOutput], summary="Listar usuários")
 def listar_usuarios(
     _: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=200),
     service: UsuarioService = Depends(get_usuario_service),
-) -> list[UsuarioOutput]:
-    return [UsuarioOutput.from_entity(usuario) for usuario in service.listar_usuarios()]
+) -> PaginatedResponse[UsuarioOutput]:
+    usuarios = [UsuarioOutput.from_entity(usuario) for usuario in service.listar_usuarios()]
+    return build_paginated_response(usuarios, page, page_size)
 
 
 @router.post("", response_model=UsuarioOutput, status_code=status.HTTP_201_CREATED, summary="Criar usuário")

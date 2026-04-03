@@ -1,23 +1,36 @@
 from fastapi import HTTPException, status
 
 from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioUpdateInput, VisitorRegisterInput
+from app.core.cache import MemoryCache
+from app.core.config import Settings
 from app.core.security import hash_password
 from app.domain.entities.usuario import RoleUsuario, Usuario
 from app.domain.repositories.usuario_repository import UsuarioRepository
 
 
 class UsuarioService:
-    def __init__(self, repository: UsuarioRepository) -> None:
+    def __init__(self, repository: UsuarioRepository, cache: MemoryCache, settings: Settings) -> None:
         self.repository = repository
+        self.cache = cache
+        self.settings = settings
 
     def listar_usuarios(self) -> list[Usuario]:
-        return self.repository.listar()
+        return self._listar_todos_usuarios()
 
     def obter_usuario(self, usuario_id: int) -> Usuario | None:
-        return self.repository.obter_por_id(usuario_id)
+        return self.cache.get_or_set(
+            f"usuarios:id:{usuario_id}",
+            self.settings.data_cache_ttl_seconds,
+            lambda: self.repository.obter_por_id(usuario_id),
+        )
 
     def obter_usuario_por_username(self, username: str) -> Usuario | None:
-        return self.repository.obter_por_username(username)
+        username_normalizado = username.strip().lower()
+        return self.cache.get_or_set(
+            f"usuarios:username:{username_normalizado}",
+            self.settings.data_cache_ttl_seconds,
+            lambda: self.repository.obter_por_username(username_normalizado),
+        )
 
     def criar_usuario(self, payload: UsuarioCreateInput) -> Usuario:
         self._garantir_username_disponivel(payload.username)
@@ -33,7 +46,9 @@ class UsuarioService:
             ativo=payload.ativo,
             senhaHash=hash_password(payload.senha),
         )
-        return self.repository.criar(usuario)
+        criado = self.repository.criar(usuario)
+        self._invalidar_cache()
+        return criado
 
     def registrar_visitante(self, payload: VisitorRegisterInput) -> Usuario:
         self._garantir_username_disponivel(payload.username)
@@ -49,7 +64,9 @@ class UsuarioService:
             ativo=True,
             senhaHash=hash_password(payload.senha),
         )
-        return self.repository.criar(usuario)
+        criado = self.repository.criar(usuario)
+        self._invalidar_cache()
+        return criado
 
     def atualizar_usuario(self, usuario_id: int, payload: UsuarioUpdateInput) -> Usuario | None:
         atual = self.repository.obter_por_id(usuario_id)
@@ -60,7 +77,7 @@ class UsuarioService:
         if existente is not None and existente.id != usuario_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe um usuário com este nome de usuário.",
+                detail="Ja existe um usuario com este nome de usuario.",
             )
 
         equipe_id = atual.equipeId if payload.role == RoleUsuario.CAPITAO else None
@@ -78,7 +95,9 @@ class UsuarioService:
             ativo=payload.ativo,
             senhaHash=hash_password(payload.senha) if payload.senha else atual.senhaHash,
         )
-        return self.repository.atualizar(usuario_id, usuario_atualizado)
+        resultado = self.repository.atualizar(usuario_id, usuario_atualizado)
+        self._invalidar_cache()
+        return resultado
 
     def vincular_equipe(self, usuario_id: int, equipe_id: int) -> Usuario | None:
         atual = self.repository.obter_por_id(usuario_id)
@@ -96,10 +115,15 @@ class UsuarioService:
             ativo=atual.ativo,
             senhaHash=atual.senhaHash,
         )
-        return self.repository.atualizar(usuario_id, usuario_atualizado)
+        resultado = self.repository.atualizar(usuario_id, usuario_atualizado)
+        self._invalidar_cache()
+        return resultado
 
     def remover_usuario(self, usuario_id: int) -> bool:
-        return self.repository.remover(usuario_id)
+        removeu = self.repository.remover(usuario_id)
+        if removeu:
+            self._invalidar_cache()
+        return removeu
 
     def ensure_bootstrap_admin(
         self,
@@ -110,10 +134,10 @@ class UsuarioService:
         if not nome or not username or not senha:
             return None
 
-        if self.repository.listar():
+        if self._listar_todos_usuarios():
             return None
 
-        return self.repository.criar(
+        criado = self.repository.criar(
             Usuario(
                 id=1,
                 nome=nome,
@@ -126,15 +150,27 @@ class UsuarioService:
                 senhaHash=hash_password(senha),
             )
         )
+        self._invalidar_cache()
+        return criado
 
     def _proximo_id_usuario(self) -> int:
-        usuarios = self.repository.listar()
+        usuarios = self._listar_todos_usuarios()
         return max((usuario.id for usuario in usuarios), default=0) + 1
 
     def _garantir_username_disponivel(self, username: str) -> None:
-        existente = self.repository.obter_por_username(username)
+        existente = self.obter_usuario_por_username(username)
         if existente is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe um usuário com este nome de usuário.",
+                detail="Ja existe um usuario com este nome de usuario.",
             )
+
+    def _listar_todos_usuarios(self) -> list[Usuario]:
+        return self.cache.get_or_set(
+            "usuarios:list:all",
+            self.settings.data_cache_ttl_seconds,
+            self.repository.listar,
+        )
+
+    def _invalidar_cache(self) -> None:
+        self.cache.invalidate_prefix("usuarios:")
