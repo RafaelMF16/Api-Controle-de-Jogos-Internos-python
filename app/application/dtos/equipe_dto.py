@@ -36,9 +36,6 @@ class EquipeInput(BaseModel):
         if not self.curso or not self.periodo:
             raise ValueError("Esportes coletivos exigem curso e periodo.")
 
-        if self.nivelEquipe is None:
-            raise ValueError("Esportes coletivos exigem nivel da equipe.")
-
         self.nivelTecnico = None
         self.experiencia = None
         return self
