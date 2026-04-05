@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_confronto_service, require_roles
+from app.api.dependencies import get_confronto_prediction_service, get_confronto_service, require_roles
 from app.application.dtos.confronto_dto import ConfrontoInput
 from app.application.dtos.pagination_dto import PaginatedResponse, build_paginated_response
+from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
 from app.domain.entities.confronto import Confronto, StatusConfronto
 from app.domain.entities.usuario import RoleUsuario, Usuario
@@ -29,7 +30,7 @@ def listar_confrontos(
     return build_paginated_response(confrontos, page, page_size)
 
 
-@router.get("/proximos", response_model=list[Confronto], summary="Listar próximos confrontos")
+@router.get("/proximos", response_model=list[Confronto], summary="Listar proximos confrontos")
 def listar_proximos_confrontos(service: ConfrontoService = Depends(get_confronto_service)) -> list[Confronto]:
     return service.listar_proximos_confrontos()
 
@@ -38,7 +39,7 @@ def listar_proximos_confrontos(service: ConfrontoService = Depends(get_confronto
 def obter_confronto(confronto_id: int, service: ConfrontoService = Depends(get_confronto_service)) -> Confronto:
     confronto = service.obter_confronto(confronto_id)
     if confronto is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
     return confronto
 
 
@@ -47,8 +48,10 @@ def criar_confronto(
     payload: ConfrontoInput,
     _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
     service: ConfrontoService = Depends(get_confronto_service),
+    prediction_service: ConfrontoPredictionService = Depends(get_confronto_prediction_service),
 ) -> Confronto:
-    return service.criar_confronto(payload)
+    confronto = service.criar_confronto(payload)
+    return prediction_service.gerar_e_salvar(confronto.id) or confronto
 
 
 @router.put("/{confronto_id}", response_model=Confronto, summary="Atualizar confronto")
@@ -60,8 +63,20 @@ def atualizar_confronto(
 ) -> Confronto:
     confronto_atualizado = service.atualizar_confronto(confronto_id, payload)
     if confronto_atualizado is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
     return confronto_atualizado
+
+
+@router.post("/{confronto_id}/previsao", response_model=Confronto, summary="Regerar previsao do confronto")
+def regerar_previsao(
+    confronto_id: int,
+    _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
+    prediction_service: ConfrontoPredictionService = Depends(get_confronto_prediction_service),
+) -> Confronto:
+    confronto = prediction_service.gerar_e_salvar(confronto_id)
+    if confronto is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
+    return confronto
 
 
 @router.delete("/{confronto_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover confronto")
@@ -72,4 +87,4 @@ def remover_confronto(
 ) -> None:
     removeu = service.remover_confronto(confronto_id)
     if not removeu:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")

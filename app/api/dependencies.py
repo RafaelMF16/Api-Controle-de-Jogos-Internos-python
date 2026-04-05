@@ -5,10 +5,15 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
+from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
 from app.application.services.dashboard_service import DashboardService
 from app.application.services.equipe_service import EquipeService
+from app.application.services.fallback_prediction_provider import FallbackPredictionProvider
+from app.application.services.heuristic_prediction_provider import HeuristicPredictionProvider
+from app.application.services.prediction_provider import PredictionProvider
 from app.application.services.usuario_service import UsuarioService
+from app.application.services.vertex_prediction_provider import VertexPredictionProvider
 from app.core.cache import MemoryCache
 from app.core.config import get_settings
 from app.domain.entities.usuario import RoleUsuario, Usuario
@@ -57,6 +62,37 @@ def get_equipe_service() -> EquipeService:
 
 def get_confronto_service() -> ConfrontoService:
     return ConfrontoService(get_confronto_repository(), get_cache(), get_settings())
+
+
+def get_prediction_provider() -> PredictionProvider:
+    settings = get_settings()
+    heuristic_provider = HeuristicPredictionProvider(model_name="heuristic-v1")
+
+    if settings.prediction_provider != "vertex":
+        return heuristic_provider
+
+    if not settings.google_cloud_project:
+        raise RuntimeError("GOOGLE_CLOUD_PROJECT precisa estar definido para usar Vertex AI.")
+
+    vertex_provider = VertexPredictionProvider(
+        project_id=settings.google_cloud_project,
+        location=settings.vertex_ai_location,
+        model_name=settings.prediction_model,
+    )
+
+    if settings.prediction_fallback_provider == "heuristic":
+        return FallbackPredictionProvider(primary=vertex_provider, fallback=heuristic_provider)
+
+    return vertex_provider
+
+
+def get_confronto_prediction_service() -> ConfrontoPredictionService:
+    return ConfrontoPredictionService(
+        confronto_repository=get_confronto_repository(),
+        equipe_repository=get_equipe_repository(),
+        provider=get_prediction_provider(),
+        cache=get_cache(),
+    )
 
 
 def get_usuario_service() -> UsuarioService:

@@ -19,6 +19,10 @@ class Settings:
     access_token_expire_minutes: int
     data_cache_ttl_seconds: int
     dashboard_cache_ttl_seconds: int
+    prediction_provider: str
+    prediction_model: str
+    vertex_ai_location: str
+    prediction_fallback_provider: str
     bootstrap_admin_name: str | None
     bootstrap_admin_username: str | None
     bootstrap_admin_password: str | None
@@ -54,6 +58,10 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")),
         data_cache_ttl_seconds=int(os.getenv("DATA_CACHE_TTL_SECONDS", "30")),
         dashboard_cache_ttl_seconds=int(os.getenv("DASHBOARD_CACHE_TTL_SECONDS", "20")),
+        prediction_provider=os.getenv("PREDICTION_PROVIDER", "heuristic"),
+        prediction_model=os.getenv("PREDICTION_MODEL", "gemini-2.5-flash-lite"),
+        vertex_ai_location=os.getenv("VERTEX_AI_LOCATION", "us-central1"),
+        prediction_fallback_provider=os.getenv("PREDICTION_FALLBACK_PROVIDER", "heuristic"),
         bootstrap_admin_name=os.getenv("BOOTSTRAP_ADMIN_NAME"),
         bootstrap_admin_username=os.getenv("BOOTSTRAP_ADMIN_USERNAME"),
         bootstrap_admin_password=os.getenv("BOOTSTRAP_ADMIN_PASSWORD"),

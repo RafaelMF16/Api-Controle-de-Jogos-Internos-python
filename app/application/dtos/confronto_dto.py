@@ -7,6 +7,8 @@ from app.domain.entities.equipe import ModalidadeEquipe
 class ConfrontoInput(BaseModel):
     equipeA: str = Field(min_length=2)
     equipeB: str = Field(min_length=2)
+    participanteAId: int | None = Field(default=None, ge=1)
+    participanteBId: int | None = Field(default=None, ge=1)
     data: str
     horario: str
     local: str = Field(min_length=2)
