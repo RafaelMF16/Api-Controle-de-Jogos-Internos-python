@@ -83,17 +83,12 @@ class HeuristicPredictionProvider(PredictionProvider):
             return 0.0
 
         if participante.modalidade == ModalidadeEquipe.NATACAO:
-            score = float((participante.nivelTecnico or 3) * 6)
-            experiencia = participante.experiencia or ""
-            if experiencia:
-                score += min(len(experiencia.split()), 12) * 0.4
-            return score
+            return 0.0
 
         total_membros = len(participante.membros)
         habilidades = {habilidade.strip().lower() for membro in participante.membros for habilidade in membro.habilidades if habilidade.strip()}
-        nivel_equipe = float((participante.nivelEquipe or 3) * 5)
-        score_elenco = min(total_membros * 1.3, 10) + min(len(habilidades), 6)
-        return nivel_equipe + score_elenco
+        score_elenco = min(total_membros * 1.5, 12) + min(len(habilidades), 8)
+        return score_elenco
 
     def _build_summary(
         self,
@@ -107,26 +102,20 @@ class HeuristicPredictionProvider(PredictionProvider):
         motivos: list[str] = []
 
         if historico_a != historico_b:
-            motivos.append("o historico recente na modalidade pesa a favor do favorito")
+            motivos.append("o histórico recente na modalidade pesa a favor do favorito")
 
-        if confronto.modalidade == ModalidadeEquipe.NATACAO:
-            nivel_a = participante_a.nivelTecnico if participante_a else None
-            nivel_b = participante_b.nivelTecnico if participante_b else None
-            if nivel_a != nivel_b:
-                motivos.append("o nivel tecnico informado cria uma vantagem inicial")
-            elif (participante_a and participante_a.experiencia) or (participante_b and participante_b.experiencia):
-                motivos.append("a experiencia declarada ajuda a diferenciar os atletas")
-        else:
-            nivel_a = participante_a.nivelEquipe if participante_a else None
-            nivel_b = participante_b.nivelEquipe if participante_b else None
-            if nivel_a != nivel_b:
-                motivos.append("o nivel da equipe influencia a projecao")
+        if confronto.modalidade != ModalidadeEquipe.NATACAO:
             membros_a = len(participante_a.membros) if participante_a else 0
             membros_b = len(participante_b.membros) if participante_b else 0
+            habilidades_a = len({habilidade.strip().lower() for membro in (participante_a.membros if participante_a else []) for habilidade in membro.habilidades if habilidade.strip()})
+            habilidades_b = len({habilidade.strip().lower() for membro in (participante_b.membros if participante_b else []) for habilidade in membro.habilidades if habilidade.strip()})
+
             if membros_a != membros_b:
-                motivos.append("a profundidade do elenco influencia a projecao")
+                motivos.append("a quantidade de membros influencia a projeção")
+            elif habilidades_a != habilidades_b:
+                motivos.append("a variedade de habilidades declaradas ajuda a diferenciar as equipes")
 
         if not motivos:
             motivos.append("os dados cadastrados indicam confronto equilibrado")
 
-        return f"{favorito} aparece levemente a frente porque {motivos[0]}."
+        return f"{favorito} aparece levemente à frente porque {motivos[0]}."

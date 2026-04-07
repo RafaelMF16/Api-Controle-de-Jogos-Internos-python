@@ -47,7 +47,7 @@ class VertexPredictionProvider(PredictionProvider):
         chance_a = self._normalize_percentage(payload.get("chanceA"))
         chance_b = self._normalize_percentage(payload.get("chanceB"))
         favorito = str(payload.get("favorito") or "").strip() or (confronto.equipeA if chance_a >= chance_b else confronto.equipeB)
-        resumo = str(payload.get("resumo") or "").strip() or "A IA gerou uma previsao com base nos dados cadastrados."
+        resumo = str(payload.get("resumo") or "").strip() or "A IA gerou uma previsão com base nos dados cadastrados."
 
         return PrevisaoConfronto(
             status=StatusPrevisao.PRONTA,
@@ -106,9 +106,6 @@ class VertexPredictionProvider(PredictionProvider):
             "curso": participante.curso,
             "periodo": participante.periodo,
             "modalidade": participante.modalidade.value if hasattr(participante.modalidade, "value") else str(participante.modalidade),
-            "nivelTecnico": participante.nivelTecnico,
-            "nivelEquipe": participante.nivelEquipe,
-            "experiencia": participante.experiencia,
             "totalMembros": len(participante.membros),
             "membros": [
                 {

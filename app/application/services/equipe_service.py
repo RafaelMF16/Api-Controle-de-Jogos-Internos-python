@@ -40,9 +40,6 @@ class EquipeService:
             membros=self._montar_membros(payload, proximo_id),
             usuarioId=payload.usuarioId,
             icone=payload.icone,
-            nivelTecnico=payload.nivelTecnico,
-            nivelEquipe=payload.nivelEquipe,
-            experiencia=payload.experiencia,
         )
         self.repository.criar(equipe)
         self._invalidar_cache()
@@ -64,9 +61,6 @@ class EquipeService:
             membros=self._montar_membros(payload, equipe_id),
             usuarioId=payload.usuarioId,
             icone=payload.icone,
-            nivelTecnico=payload.nivelTecnico,
-            nivelEquipe=payload.nivelEquipe,
-            experiencia=payload.experiencia,
         )
         self.repository.atualizar(equipe_id, equipe)
         self._invalidar_cache()
