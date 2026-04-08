@@ -1,26 +1,31 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import get_current_user, get_usuario_service, require_roles
-from app.application.dtos.pagination_dto import PaginatedResponse, build_paginated_response
+from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioOutput, UsuarioUpdateInput
 from app.application.services.usuario_service import UsuarioService
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
-router = APIRouter(prefix="/usuarios", tags=["Usuários"])
+router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
 
-@router.get("", response_model=PaginatedResponse[UsuarioOutput], summary="Listar usuários")
+@router.get("", response_model=CursorPaginatedResponse[UsuarioOutput], summary="Listar usuarios")
 def listar_usuarios(
     _: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=10, ge=1, le=200),
+    cursor: str | None = Query(default=None),
+    page_size: int = Query(default=10, ge=1, le=50),
     service: UsuarioService = Depends(get_usuario_service),
-) -> PaginatedResponse[UsuarioOutput]:
-    usuarios = [UsuarioOutput.from_entity(usuario) for usuario in service.listar_usuarios()]
-    return build_paginated_response(usuarios, page, page_size)
+) -> CursorPaginatedResponse[UsuarioOutput]:
+    response = service.listar_usuarios_paginado(limit=page_size, cursor=cursor)
+    return CursorPaginatedResponse[UsuarioOutput](
+        items=[UsuarioOutput.from_entity(usuario) for usuario in response.items],
+        page_size=response.page_size,
+        next_cursor=response.next_cursor,
+        has_next=response.has_next,
+    )
 
 
-@router.post("", response_model=UsuarioOutput, status_code=status.HTTP_201_CREATED, summary="Criar usuário")
+@router.post("", response_model=UsuarioOutput, status_code=status.HTTP_201_CREATED, summary="Criar usuario")
 def criar_usuario(
     payload: UsuarioCreateInput,
     _: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
@@ -30,7 +35,7 @@ def criar_usuario(
     return UsuarioOutput.from_entity(usuario)
 
 
-@router.put("/{usuario_id}", response_model=UsuarioOutput, summary="Atualizar usuário")
+@router.put("/{usuario_id}", response_model=UsuarioOutput, summary="Atualizar usuario")
 def atualizar_usuario(
     usuario_id: int,
     payload: UsuarioUpdateInput,
@@ -40,17 +45,17 @@ def atualizar_usuario(
     if current_user.id == usuario_id and payload.role != RoleUsuario.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="O administrador logado não pode remover o próprio acesso de admin.",
+            detail="O administrador logado nao pode remover o proprio acesso de admin.",
         )
 
     usuario = service.atualizar_usuario(usuario_id, payload)
     if usuario is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario nao encontrado.")
 
     return UsuarioOutput.from_entity(usuario)
 
 
-@router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover usuário")
+@router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover usuario")
 def remover_usuario(
     usuario_id: int,
     current_user: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
@@ -59,9 +64,9 @@ def remover_usuario(
     if current_user.id == usuario_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="O administrador logado não pode remover a própria conta.",
+            detail="O administrador logado nao pode remover a propria conta.",
         )
 
     removeu = service.remover_usuario(usuario_id)
     if not removeu:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario nao encontrado.")

@@ -16,6 +16,7 @@ class FirestoreDatabase:
         self.equipes_collection_name = equipes_collection
         self.confrontos_collection_name = confrontos_collection
         self.usuarios_collection_name = usuarios_collection
+        self.metadata_collection_name = "_metadata"
 
     @cached_property
     def client(self) -> Client:
@@ -34,3 +35,21 @@ class FirestoreDatabase:
     @property
     def usuarios_collection(self) -> CollectionReference:
         return self.client.collection(self.usuarios_collection_name)
+
+    @property
+    def metadata_collection(self) -> CollectionReference:
+        return self.client.collection(self.metadata_collection_name)
+
+    def next_sequence(self, key: str, *, seed: int = 0) -> int:
+        counter_ref = self.metadata_collection.document(f"counter:{key}")
+
+        @firestore.transactional
+        def increment(transaction):
+            snapshot = counter_ref.get(transaction=transaction)
+            current_value = int(snapshot.get("value")) if snapshot.exists else seed
+            next_value = current_value + 1
+            transaction.set(counter_ref, {"value": next_value}, merge=True)
+            return next_value
+
+        transaction = self.client.transaction()
+        return increment(transaction)

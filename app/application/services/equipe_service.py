@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.equipe_dto import EquipeInput
 from app.core.cache import MemoryCache
 from app.core.config import Settings
@@ -13,16 +14,18 @@ class EquipeService:
         self.cache = cache
         self.settings = settings
 
-    def listar_equipes(self, categoria: str | None = None) -> list[Equipe]:
-        equipes = self._listar_todas_equipes()
-
-        if categoria == "individual":
-            return [equipe for equipe in equipes if equipe.modalidade == ModalidadeEquipe.NATACAO]
-
-        if categoria == "coletivo":
-            return [equipe for equipe in equipes if equipe.modalidade != ModalidadeEquipe.NATACAO]
-
-        return equipes
+    def listar_equipes_paginado(
+        self,
+        *,
+        categoria: str | None = None,
+        limit: int = 10,
+        cursor: str | None = None,
+    ) -> CursorPaginatedResponse[Equipe]:
+        return self.repository.listar_paginado(
+            categoria=categoria,
+            limit=limit,
+            cursor=cursor,
+        )
 
     def obter_equipe(self, equipe_id: int) -> Equipe | None:
         return self.repository.obter_por_id(equipe_id)
@@ -73,10 +76,7 @@ class EquipeService:
         return removeu
 
     def obter_inscricao_individual(self, usuario_id: int, modalidade: ModalidadeEquipe) -> Equipe | None:
-        for equipe in self._listar_todas_equipes():
-            if equipe.usuarioId == usuario_id and equipe.modalidade == modalidade:
-                return equipe
-        return None
+        return self.repository.obter_inscricao_individual(usuario_id, modalidade.value)
 
     def _garantir_nome_disponivel(
         self,
@@ -87,23 +87,15 @@ class EquipeService:
         if modalidade == ModalidadeEquipe.NATACAO:
             return
 
-        nome_normalizado = nome.strip().lower()
-        for equipe in self._listar_todas_equipes():
-            if equipe.modalidade == ModalidadeEquipe.NATACAO:
-                continue
-
-            if equipe_id_atual is not None and equipe.id == equipe_id_atual:
-                continue
-
-            if equipe.nome.strip().lower() == nome_normalizado:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Ja existe uma equipe cadastrada com este nome.",
-                )
+        existente = self.repository.obter_por_nome_modalidade(nome.strip(), modalidade.value)
+        if existente is not None and existente.id != equipe_id_atual:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ja existe uma equipe cadastrada com este nome.",
+            )
 
     def _proximo_id_equipe(self) -> int:
-        equipes = self._listar_todas_equipes()
-        return max((equipe.id for equipe in equipes), default=0) + 1
+        return self.repository.proximo_id()
 
     def _listar_todas_equipes(self) -> list[Equipe]:
         return self.cache.get_or_set(

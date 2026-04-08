@@ -1,3 +1,4 @@
+from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.confronto_dto import ConfrontoInput
 from app.core.cache import MemoryCache
 from app.core.config import Settings
@@ -11,38 +12,22 @@ class ConfrontoService:
         self.cache = cache
         self.settings = settings
 
-    def listar_confrontos(
+    def listar_confrontos_paginado(
         self,
-        busca: str | None = None,
+        *,
         equipe: str | None = None,
         modalidade: str | None = None,
         status: StatusConfronto | None = None,
-    ) -> list[Confronto]:
-        confrontos = self._listar_todos_confrontos()
-
-        if busca:
-            termo = busca.strip().lower()
-            confrontos = [
-                confronto for confronto in confrontos
-                if termo in confronto.equipeA.lower() or termo in confronto.equipeB.lower()
-            ]
-
-        if equipe:
-            confrontos = [
-                confronto for confronto in confrontos
-                if confronto.equipeA.lower() == equipe.lower() or confronto.equipeB.lower() == equipe.lower()
-            ]
-
-        if modalidade:
-            confrontos = [
-                confronto for confronto in confrontos
-                if (confronto.modalidade or "").lower() == modalidade.lower()
-            ]
-
-        if status:
-            confrontos = [confronto for confronto in confrontos if confronto.status == status]
-
-        return confrontos
+        limit: int = 10,
+        cursor: str | None = None,
+    ) -> CursorPaginatedResponse[Confronto]:
+        return self.repository.listar_paginado(
+            equipe=equipe,
+            modalidade=modalidade,
+            status=status,
+            limit=limit,
+            cursor=cursor,
+        )
 
     def listar_proximos_confrontos(self) -> list[Confronto]:
         return [
@@ -96,8 +81,7 @@ class ConfrontoService:
         return removeu
 
     def _proximo_id_confronto(self) -> int:
-        confrontos = self._listar_todos_confrontos()
-        return max((confronto.id for confronto in confrontos), default=0) + 1
+        return self.repository.proximo_id()
 
     def _listar_todos_confrontos(self) -> list[Confronto]:
         return self.cache.get_or_set(
