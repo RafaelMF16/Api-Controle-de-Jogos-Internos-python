@@ -13,6 +13,4 @@ class VisitorSignupInput(VisitorRegisterInput):
 
 
 class AuthResponse(BaseModel):
-    accessToken: str
-    tokenType: str = "Bearer"
     user: UsuarioOutput

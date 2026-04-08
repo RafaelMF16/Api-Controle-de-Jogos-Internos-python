@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from functools import lru_cache
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
@@ -113,16 +113,19 @@ def get_dashboard_service() -> DashboardService:
 
 
 def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Usuario:
-    if credentials is None:
+    settings = get_settings()
+    token = credentials.credentials if credentials is not None else request.cookies.get(settings.auth_cookie_name)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Autenticação obrigatória.",
+            detail="Autenticacao obrigatoria.",
         )
 
-    return auth_service.obter_usuario_atual(credentials.credentials)
+    return auth_service.obter_usuario_atual(token)
 
 
 def require_roles(*roles: RoleUsuario) -> Callable[[Usuario], Usuario]:
@@ -130,7 +133,7 @@ def require_roles(*roles: RoleUsuario) -> Callable[[Usuario], Usuario]:
         if current_user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não tem permissão para esta ação.",
+                detail="Voce nao tem permissao para esta acao.",
             )
         return current_user
 
