@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioUpdateInput, VisitorRegisterInput
 from app.core.cache import MemoryCache
 from app.core.config import Settings
@@ -14,8 +15,8 @@ class UsuarioService:
         self.cache = cache
         self.settings = settings
 
-    def listar_usuarios(self) -> list[Usuario]:
-        return self._listar_todos_usuarios()
+    def listar_usuarios_paginado(self, *, limit: int = 10, cursor: str | None = None) -> CursorPaginatedResponse[Usuario]:
+        return self.repository.listar_paginado(limit=limit, cursor=cursor)
 
     def obter_usuario(self, usuario_id: int) -> Usuario | None:
         return self.cache.get_or_set(
@@ -134,7 +135,7 @@ class UsuarioService:
         if not nome or not username or not senha:
             return None
 
-        if self._listar_todos_usuarios():
+        if self.repository.possui_registros():
             return None
 
         criado = self.repository.criar(
@@ -154,8 +155,7 @@ class UsuarioService:
         return criado
 
     def _proximo_id_usuario(self) -> int:
-        usuarios = self._listar_todos_usuarios()
-        return max((usuario.id for usuario in usuarios), default=0) + 1
+        return self.repository.proximo_id()
 
     def _garantir_username_disponivel(self, username: str) -> None:
         existente = self.obter_usuario_por_username(username)

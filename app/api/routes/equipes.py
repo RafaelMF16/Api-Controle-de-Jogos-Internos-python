@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import get_current_user, get_equipe_service, get_usuario_service, require_roles
+from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.equipe_dto import EquipeInput
-from app.application.dtos.pagination_dto import PaginatedResponse, build_paginated_response
 from app.application.services.equipe_service import EquipeService
 from app.application.services.usuario_service import UsuarioService
 from app.domain.entities.equipe import Equipe, ModalidadeEquipe
@@ -11,22 +11,21 @@ from app.domain.entities.usuario import RoleUsuario, Usuario
 router = APIRouter(prefix="/equipes", tags=["Equipes"])
 
 
-@router.get("", response_model=PaginatedResponse[Equipe], summary="Listar equipes")
+@router.get("", response_model=CursorPaginatedResponse[Equipe], summary="Listar equipes")
 def listar_equipes(
     categoria: str | None = Query(default=None, pattern="^(coletivo|individual)$"),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=10, ge=1, le=500),
+    cursor: str | None = Query(default=None),
+    page_size: int = Query(default=10, ge=1, le=50),
     service: EquipeService = Depends(get_equipe_service),
-) -> PaginatedResponse[Equipe]:
-    equipes = service.listar_equipes(categoria=categoria)
-    return build_paginated_response(equipes, page, page_size)
+) -> CursorPaginatedResponse[Equipe]:
+    return service.listar_equipes_paginado(categoria=categoria, limit=page_size, cursor=cursor)
 
 
 @router.get("/{equipe_id}", response_model=Equipe, summary="Obter equipe por id")
 def obter_equipe(equipe_id: int, service: EquipeService = Depends(get_equipe_service)) -> Equipe:
     equipe = service.obter_equipe(equipe_id)
     if equipe is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro nao encontrado.")
     return equipe
 
 
@@ -39,20 +38,20 @@ def criar_equipe(
 ) -> Equipe:
     if payload.modalidade == ModalidadeEquipe.NATACAO:
         if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
 
         if current_user.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             if not current_user.curso or not current_user.periodo:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Complete seu cadastro com curso e período para se inscrever.",
+                    detail="Complete seu cadastro com curso e periodo para se inscrever.",
                 )
 
             existente = service.obter_inscricao_individual(current_user.id, payload.modalidade)
             if existente is not None:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="Você já possui inscrição nessa modalidade.",
+                    detail="Voce ja possui inscricao nessa modalidade.",
                 )
 
             payload = payload.model_copy(
@@ -69,10 +68,10 @@ def criar_equipe(
         return service.criar_equipe(payload)
 
     if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.CAPITAO}:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
 
     if current_user.role == RoleUsuario.CAPITAO and current_user.equipeId is not None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitão só pode cadastrar uma equipe.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitao so pode cadastrar uma equipe.")
 
     payload_ajustado = payload.model_copy(
         update={
@@ -98,14 +97,14 @@ def atualizar_equipe(
 ) -> Equipe:
     equipe_atual = service.obter_equipe(equipe_id)
     if equipe_atual is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro nao encontrado.")
 
     if equipe_atual.modalidade == ModalidadeEquipe.NATACAO:
         if current_user.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             if equipe_atual.usuarioId != current_user.id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Você só pode editar a própria inscrição.",
+                    detail="Voce so pode editar a propria inscricao.",
                 )
 
             payload = payload.model_copy(
@@ -119,13 +118,13 @@ def atualizar_equipe(
                 }
             )
         elif current_user.role != RoleUsuario.ADMIN:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
     else:
         if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.CAPITAO}:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
 
         if current_user.role == RoleUsuario.CAPITAO and current_user.equipeId != equipe_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitão só pode editar a própria equipe.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Capitao so pode editar a propria equipe.")
 
         payload = payload.model_copy(
             update={
@@ -139,12 +138,12 @@ def atualizar_equipe(
         if existente is not None and existente.id != equipe_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Já existe uma inscrição nessa modalidade para este usuário.",
+                detail="Ja existe uma inscricao nessa modalidade para este usuario.",
             )
 
     equipe_atualizada = service.atualizar_equipe(equipe_id, payload)
     if equipe_atualizada is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro nao encontrado.")
     return equipe_atualizada
 
 
@@ -156,4 +155,4 @@ def remover_equipe(
 ) -> None:
     removeu = service.remover_equipe(equipe_id)
     if not removeu:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro não encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro nao encontrado.")
