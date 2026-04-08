@@ -17,6 +17,9 @@ class Settings:
     jwt_secret_key: str
     jwt_algorithm: str
     access_token_expire_minutes: int
+    auth_cookie_name: str
+    auth_cookie_secure: bool
+    auth_cookie_samesite: str
     data_cache_ttl_seconds: int
     dashboard_cache_ttl_seconds: int
     prediction_provider: str
@@ -30,7 +33,7 @@ class Settings:
 
 def _parse_allowed_origins(raw_value: str | None) -> list[str]:
     if not raw_value:
-        return ["http://localhost:4200"]
+        return ["http://localhost:4200", "http://127.0.0.1:4200"]
 
     try:
         parsed = json.loads(raw_value)
@@ -56,6 +59,9 @@ def get_settings() -> Settings:
         jwt_secret_key=os.getenv("JWT_SECRET_KEY", "troque-esta-chave-em-producao"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")),
+        auth_cookie_name=os.getenv("AUTH_COOKIE_NAME", "ug_access_token"),
+        auth_cookie_secure=os.getenv("AUTH_COOKIE_SECURE", "false").strip().lower() == "true",
+        auth_cookie_samesite=os.getenv("AUTH_COOKIE_SAMESITE", "lax").strip().lower(),
         data_cache_ttl_seconds=int(os.getenv("DATA_CACHE_TTL_SECONDS", "30")),
         dashboard_cache_ttl_seconds=int(os.getenv("DASHBOARD_CACHE_TTL_SECONDS", "20")),
         prediction_provider=os.getenv("PREDICTION_PROVIDER", "heuristic"),
