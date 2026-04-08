@@ -28,21 +28,15 @@ class Equipe(BaseModel):
     membros: list[Membro] = Field(default_factory=list)
     usuarioId: int | None = None
     icone: str | None = None
-    nivelTecnico: int | None = Field(default=None, ge=1, le=5)
-    nivelEquipe: int | None = Field(default=None, ge=1, le=5)
-    experiencia: str | None = None
 
     @model_validator(mode="after")
     def validar_por_categoria(self):
         if self.modalidade == ModalidadeEquipe.NATACAO:
             self.responsavel = None
             self.membros = []
-            self.nivelEquipe = None
             return self
 
         self.usuarioId = None
-        self.experiencia = None if not self.experiencia else self.experiencia.strip()
         if not self.responsavel or len(self.responsavel.strip()) < 2:
-            raise ValueError("Esportes coletivos exigem um responsavel valido.")
-        self.nivelTecnico = None
+            raise ValueError("Esportes coletivos exigem um responsável válido.")
         return self

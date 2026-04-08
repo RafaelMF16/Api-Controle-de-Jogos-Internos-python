@@ -81,11 +81,6 @@ def criar_equipe(
             "usuarioId": None,
         }
     )
-    if payload_ajustado.nivelEquipe is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Esportes coletivos exigem nivel da equipe.",
-        )
     equipe = service.criar_equipe(payload_ajustado)
 
     if current_user.role == RoleUsuario.CAPITAO:
@@ -136,7 +131,6 @@ def atualizar_equipe(
             update={
                 "responsavel": equipe_atual.responsavel,
                 "usuarioId": None,
-                "nivelEquipe": payload.nivelEquipe if payload.nivelEquipe is not None else equipe_atual.nivelEquipe,
             }
         )
 
