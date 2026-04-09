@@ -74,11 +74,16 @@ class ConfrontoService:
         self._invalidar_cache()
         return resultado
 
-    def remover_confronto(self, confronto_id: int) -> bool:
+    def remover_confronto(self, confronto_id: int) -> Confronto | None:
+        confronto = self.repository.obter_por_id(confronto_id)
+        if confronto is None:
+            return None
+
         removeu = self.repository.remover(confronto_id)
         if removeu:
             self._invalidar_cache()
-        return removeu
+            return confronto
+        return None
 
     def _proximo_id_confronto(self) -> int:
         return self.repository.proximo_id()

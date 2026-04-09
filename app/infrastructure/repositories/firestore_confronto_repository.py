@@ -67,6 +67,21 @@ class FirestoreConfrontoRepository(ConfrontoRepository):
             return None
         return Confronto.model_validate(documento.to_dict())
 
+    def existe_com_participante(self, participante_id: int, nome: str | None = None) -> bool:
+        if self._existe_por_campo("participanteAId", participante_id):
+            return True
+
+        if self._existe_por_campo("participanteBId", participante_id):
+            return True
+
+        if nome and self._existe_por_campo("equipeA", nome):
+            return True
+
+        if nome and self._existe_por_campo("equipeB", nome):
+            return True
+
+        return False
+
     def proximo_id(self) -> int:
         return self.database.next_sequence("confrontos", seed=self._ultimo_id())
 
@@ -96,3 +111,9 @@ class FirestoreConfrontoRepository(ConfrontoRepository):
             dados = documento.to_dict() or {}
             return int(dados.get("id", 0))
         return 0
+
+    def _existe_por_campo(self, campo: str, valor: int | str) -> bool:
+        documentos = self.collection.where(filter=FieldFilter(campo, "==", valor)).limit(1).stream()
+        for _ in documentos:
+            return True
+        return False

@@ -32,6 +32,10 @@ class EquipeRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def existe_vinculo_usuario(self, usuario_id: int) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     def proximo_id(self) -> int:
         raise NotImplementedError
 

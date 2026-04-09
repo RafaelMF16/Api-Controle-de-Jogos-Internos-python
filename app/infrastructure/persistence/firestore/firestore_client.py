@@ -16,6 +16,7 @@ class FirestoreDatabase:
         self.equipes_collection_name = equipes_collection
         self.confrontos_collection_name = confrontos_collection
         self.usuarios_collection_name = usuarios_collection
+        self.auditoria_delecoes_collection_name = "_auditoria_delecoes"
         self.metadata_collection_name = "_metadata"
 
     @cached_property
@@ -35,6 +36,10 @@ class FirestoreDatabase:
     @property
     def usuarios_collection(self) -> CollectionReference:
         return self.client.collection(self.usuarios_collection_name)
+
+    @property
+    def auditoria_delecoes_collection(self) -> CollectionReference:
+        return self.client.collection(self.auditoria_delecoes_collection_name)
 
     @property
     def metadata_collection(self) -> CollectionReference:

@@ -38,5 +38,9 @@ class UsuarioRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def desvincular_equipe(self, equipe_id: int) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
     def remover(self, usuario_id: int) -> bool:
         raise NotImplementedError

@@ -7,6 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.application.services.auth_service import AuthService
 from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
+from app.application.services.deletion_audit_service import DeletionAuditService
 from app.application.services.dashboard_service import DashboardService
 from app.application.services.equipe_service import EquipeService
 from app.application.services.fallback_prediction_provider import FallbackPredictionProvider
@@ -57,7 +58,13 @@ def get_cache() -> MemoryCache:
 
 
 def get_equipe_service() -> EquipeService:
-    return EquipeService(get_equipe_repository(), get_cache(), get_settings())
+    return EquipeService(
+        get_equipe_repository(),
+        get_cache(),
+        get_settings(),
+        get_confronto_repository(),
+        get_usuario_repository(),
+    )
 
 
 def get_confronto_service() -> ConfrontoService:
@@ -96,7 +103,11 @@ def get_confronto_prediction_service() -> ConfrontoPredictionService:
 
 
 def get_usuario_service() -> UsuarioService:
-    return UsuarioService(get_usuario_repository(), get_cache(), get_settings())
+    return UsuarioService(get_usuario_repository(), get_cache(), get_settings(), get_equipe_repository())
+
+
+def get_deletion_audit_service() -> DeletionAuditService:
+    return DeletionAuditService(get_database())
 
 
 def get_auth_service() -> AuthService:

@@ -6,14 +6,16 @@ from app.core.cache import MemoryCache
 from app.core.config import Settings
 from app.core.security import hash_password
 from app.domain.entities.usuario import RoleUsuario, Usuario
+from app.domain.repositories.equipe_repository import EquipeRepository
 from app.domain.repositories.usuario_repository import UsuarioRepository
 
 
 class UsuarioService:
-    def __init__(self, repository: UsuarioRepository, cache: MemoryCache, settings: Settings) -> None:
+    def __init__(self, repository: UsuarioRepository, cache: MemoryCache, settings: Settings, equipe_repository: EquipeRepository) -> None:
         self.repository = repository
         self.cache = cache
         self.settings = settings
+        self.equipe_repository = equipe_repository
 
     def listar_usuarios_paginado(self, *, limit: int = 10, cursor: str | None = None) -> CursorPaginatedResponse[Usuario]:
         return self.repository.listar_paginado(limit=limit, cursor=cursor)
@@ -120,11 +122,28 @@ class UsuarioService:
         self._invalidar_cache()
         return resultado
 
-    def remover_usuario(self, usuario_id: int) -> bool:
+    def remover_usuario(self, usuario_id: int) -> Usuario | None:
+        usuario = self.repository.obter_por_id(usuario_id)
+        if usuario is None:
+            return None
+
+        if usuario.equipeId is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Nao e possivel remover este usuario porque ele ainda esta vinculado a uma equipe.",
+            )
+
+        if self.equipe_repository.existe_vinculo_usuario(usuario_id):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Nao e possivel remover este usuario porque ele possui inscricao individual vinculada.",
+            )
+
         removeu = self.repository.remover(usuario_id)
         if removeu:
             self._invalidar_cache()
-        return removeu
+            return usuario
+        return None
 
     def ensure_bootstrap_admin(
         self,
