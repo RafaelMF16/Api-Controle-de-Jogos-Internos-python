@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_confronto_prediction_service, get_confronto_service, require_roles
+from app.api.dependencies import get_confronto_prediction_service, get_confronto_service, get_deletion_audit_service, require_roles
 from app.application.dtos.confronto_dto import ConfrontoInput
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
+from app.application.services.deletion_audit_service import DeletionAuditService
 from app.domain.entities.confronto import Confronto, StatusConfronto
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
@@ -81,9 +82,18 @@ def regerar_previsao(
 @router.delete("/{confronto_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover confronto")
 def remover_confronto(
     confronto_id: int,
-    _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
+    current_user: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
     service: ConfrontoService = Depends(get_confronto_service),
+    audit_service: DeletionAuditService = Depends(get_deletion_audit_service),
 ) -> None:
-    removeu = service.remover_confronto(confronto_id)
-    if not removeu:
+    confronto = service.remover_confronto(confronto_id)
+    if confronto is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
+
+    audit_service.registrar(
+        ator=current_user,
+        entidade_tipo="confronto",
+        entidade_id=confronto.id,
+        entidade_nome=f"{confronto.equipeA} vs {confronto.equipeB}",
+        detalhes={"modalidade": confronto.modalidade.value, "status": confronto.status.value},
+    )

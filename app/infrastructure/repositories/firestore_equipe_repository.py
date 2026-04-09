@@ -94,6 +94,12 @@ class FirestoreEquipeRepository(EquipeRepository):
             return self._to_equipe(documento.to_dict())
         return None
 
+    def existe_vinculo_usuario(self, usuario_id: int) -> bool:
+        documentos = self.collection.where(filter=FieldFilter("usuarioId", "==", usuario_id)).limit(1).stream()
+        for _ in documentos:
+            return True
+        return False
+
     def proximo_id(self) -> int:
         return self.database.next_sequence("equipes", seed=self._ultimo_id())
 

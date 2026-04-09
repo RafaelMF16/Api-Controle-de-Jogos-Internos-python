@@ -5,14 +5,25 @@ from app.application.dtos.equipe_dto import EquipeInput
 from app.core.cache import MemoryCache
 from app.core.config import Settings
 from app.domain.entities.equipe import CAPITAO_FUNCAO, MAX_HABILIDADES_POR_MEMBRO, Equipe, Membro, ModalidadeEquipe, eh_membro_capitao, obter_limite_integrantes
+from app.domain.repositories.confronto_repository import ConfrontoRepository
 from app.domain.repositories.equipe_repository import EquipeRepository
+from app.domain.repositories.usuario_repository import UsuarioRepository
 
 
 class EquipeService:
-    def __init__(self, repository: EquipeRepository, cache: MemoryCache, settings: Settings):
+    def __init__(
+        self,
+        repository: EquipeRepository,
+        cache: MemoryCache,
+        settings: Settings,
+        confronto_repository: ConfrontoRepository,
+        usuario_repository: UsuarioRepository,
+    ):
         self.repository = repository
         self.cache = cache
         self.settings = settings
+        self.confronto_repository = confronto_repository
+        self.usuario_repository = usuario_repository
 
     def listar_equipes_paginado(
         self,
@@ -71,11 +82,24 @@ class EquipeService:
         self._invalidar_cache()
         return equipe
 
-    def remover_equipe(self, equipe_id: int) -> bool:
+    def remover_equipe(self, equipe_id: int) -> Equipe | None:
+        equipe = self.repository.obter_por_id(equipe_id)
+        if equipe is None:
+            return None
+
+        if self.confronto_repository.existe_com_participante(equipe_id, equipe.nome):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Nao e possivel remover este cadastro porque existem confrontos vinculados a ele.",
+            )
+
         removeu = self.repository.remover(equipe_id)
         if removeu:
+            self.usuario_repository.desvincular_equipe(equipe_id)
             self._invalidar_cache()
-        return removeu
+            self.cache.invalidate_prefix("usuarios:")
+            return equipe
+        return None
 
     def obter_inscricao_individual(self, usuario_id: int, modalidade: ModalidadeEquipe) -> Equipe | None:
         return self.repository.obter_inscricao_individual(usuario_id, modalidade.value)

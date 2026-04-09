@@ -68,6 +68,18 @@ class FirestoreUsuarioRepository(UsuarioRepository):
         referencia.set(usuario.model_dump(mode="json"))
         return usuario
 
+    def desvincular_equipe(self, equipe_id: int) -> int:
+        documentos = self.collection.where(filter=FieldFilter("equipeId", "==", equipe_id)).stream()
+        total = 0
+
+        for documento in documentos:
+            dados = documento.to_dict() or {}
+            usuario = self._to_usuario(dados).model_copy(update={"equipeId": None})
+            self.collection.document(str(usuario.id)).set(usuario.model_dump(mode="json"))
+            total += 1
+
+        return total
+
     def remover(self, usuario_id: int) -> bool:
         referencia = self.collection.document(str(usuario_id))
         if not referencia.get().exists:

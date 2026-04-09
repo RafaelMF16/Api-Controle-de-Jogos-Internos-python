@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_current_user, get_usuario_service, require_roles
+from app.api.dependencies import get_current_user, get_deletion_audit_service, get_usuario_service, require_roles
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioOutput, UsuarioUpdateInput
 from app.application.services.usuario_service import UsuarioService
+from app.application.services.deletion_audit_service import DeletionAuditService
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -60,6 +61,7 @@ def remover_usuario(
     usuario_id: int,
     current_user: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
     service: UsuarioService = Depends(get_usuario_service),
+    audit_service: DeletionAuditService = Depends(get_deletion_audit_service),
 ) -> None:
     if current_user.id == usuario_id:
         raise HTTPException(
@@ -67,6 +69,14 @@ def remover_usuario(
             detail="O administrador logado nao pode remover a propria conta.",
         )
 
-    removeu = service.remover_usuario(usuario_id)
-    if not removeu:
+    usuario = service.remover_usuario(usuario_id)
+    if usuario is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario nao encontrado.")
+
+    audit_service.registrar(
+        ator=current_user,
+        entidade_tipo="usuario",
+        entidade_id=usuario.id,
+        entidade_nome=usuario.nome,
+        detalhes={"username": usuario.username, "role": usuario.role.value},
+    )

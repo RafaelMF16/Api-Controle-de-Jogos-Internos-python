@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_current_user, get_equipe_service, get_usuario_service, require_roles
+from app.api.dependencies import get_current_user, get_deletion_audit_service, get_equipe_service, get_usuario_service, require_roles
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.equipe_dto import EquipeInput, MembroInput
 from app.application.services.equipe_service import EquipeService
+from app.application.services.deletion_audit_service import DeletionAuditService
 from app.application.services.usuario_service import UsuarioService
 from app.domain.entities.equipe import CAPITAO_FUNCAO, Equipe, ModalidadeEquipe, eh_membro_capitao
 from app.domain.entities.usuario import RoleUsuario, Usuario
@@ -139,12 +140,21 @@ def atualizar_equipe(
 @router.delete("/{equipe_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover equipe")
 def remover_equipe(
     equipe_id: int,
-    _: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
+    current_user: Usuario = Depends(require_roles(RoleUsuario.ADMIN)),
     service: EquipeService = Depends(get_equipe_service),
+    audit_service: DeletionAuditService = Depends(get_deletion_audit_service),
 ) -> None:
-    removeu = service.remover_equipe(equipe_id)
-    if not removeu:
+    equipe = service.remover_equipe(equipe_id)
+    if equipe is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro nao encontrado.")
+
+    audit_service.registrar(
+        ator=current_user,
+        entidade_tipo="equipe",
+        entidade_id=equipe.id,
+        entidade_nome=equipe.nome,
+        detalhes={"modalidade": equipe.modalidade.value},
+    )
 
 
 def _normalizar_payload_coletivo(payload: EquipeInput, current_user: Usuario, equipe_atual: Equipe | None = None) -> EquipeInput:

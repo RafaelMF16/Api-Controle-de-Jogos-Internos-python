@@ -27,6 +27,10 @@ class ConfrontoRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def existe_com_participante(self, participante_id: int, nome: str | None = None) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     def proximo_id(self) -> int:
         raise NotImplementedError
 
