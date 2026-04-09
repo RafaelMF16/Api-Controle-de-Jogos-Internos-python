@@ -4,7 +4,7 @@ from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.equipe_dto import EquipeInput
 from app.core.cache import MemoryCache
 from app.core.config import Settings
-from app.domain.entities.equipe import Equipe, Membro, ModalidadeEquipe
+from app.domain.entities.equipe import CAPITAO_FUNCAO, MAX_HABILIDADES_POR_MEMBRO, Equipe, Membro, ModalidadeEquipe, eh_membro_capitao, obter_limite_integrantes
 from app.domain.repositories.equipe_repository import EquipeRepository
 
 
@@ -35,7 +35,7 @@ class EquipeService:
         proximo_id = self._proximo_id_equipe()
         equipe = Equipe(
             id=proximo_id,
-            nome=payload.nome,
+            nome=payload.nome.strip(),
             responsavel=payload.responsavel,
             curso=payload.curso or "",
             periodo=payload.periodo or "",
@@ -44,6 +44,7 @@ class EquipeService:
             usuarioId=payload.usuarioId,
             icone=payload.icone,
         )
+        self._validar_limites_e_consistencia(equipe)
         self.repository.criar(equipe)
         self._invalidar_cache()
         return equipe
@@ -56,7 +57,7 @@ class EquipeService:
         self._garantir_nome_disponivel(payload.nome, payload.modalidade, equipe_id)
         equipe = Equipe(
             id=equipe_id,
-            nome=payload.nome,
+            nome=payload.nome.strip(),
             responsavel=payload.responsavel,
             curso=payload.curso or "",
             periodo=payload.periodo or "",
@@ -65,6 +66,7 @@ class EquipeService:
             usuarioId=payload.usuarioId,
             icone=payload.icone,
         )
+        self._validar_limites_e_consistencia(equipe)
         self.repository.atualizar(equipe_id, equipe)
         self._invalidar_cache()
         return equipe
@@ -97,13 +99,6 @@ class EquipeService:
     def _proximo_id_equipe(self) -> int:
         return self.repository.proximo_id()
 
-    def _listar_todas_equipes(self) -> list[Equipe]:
-        return self.cache.get_or_set(
-            "equipes:list:all",
-            self.settings.data_cache_ttl_seconds,
-            self.repository.listar,
-        )
-
     def _invalidar_cache(self) -> None:
         self.cache.invalidate_prefix("equipes:")
         self.cache.invalidate_prefix("dashboard:")
@@ -118,6 +113,34 @@ class EquipeService:
                 nome=item.nome,
                 habilidades=item.habilidades,
                 funcao=item.funcao,
+                usuarioId=item.usuarioId,
             )
             for index, item in enumerate(payload.membros, start=1)
         ]
+
+    def _validar_limites_e_consistencia(self, equipe: Equipe) -> None:
+        if equipe.modalidade == ModalidadeEquipe.NATACAO:
+            return
+
+        limite = obter_limite_integrantes(equipe.modalidade)
+        if len(equipe.membros) > limite:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A modalidade {equipe.modalidade.value} permite no maximo {limite} integrantes.",
+            )
+
+        capitaes = [membro for membro in equipe.membros if eh_membro_capitao(membro)]
+        if len(capitaes) != 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A equipe precisa ter exatamente um membro com funcao de Capitao.",
+            )
+
+        for membro in equipe.membros:
+            if len(membro.habilidades) > MAX_HABILIDADES_POR_MEMBRO:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cada integrante pode ter no maximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.",
+                )
+
+        equipe.responsavel = capitaes[0].nome
