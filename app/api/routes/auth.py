@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Response, status
 
 from app.api.dependencies import get_auth_service, get_current_user, get_usuario_service
 from app.application.dtos.auth_dto import AuthResponse, LoginInput, VisitorSignupInput
-from app.application.dtos.usuario_dto import UsuarioOutput
+from app.application.dtos.usuario_dto import UsuarioOutput, UsuarioTemaInput
 from app.application.services.auth_service import AuthService
 from app.application.services.usuario_service import UsuarioService
 from app.core.config import get_settings
@@ -72,3 +72,15 @@ def logout(response: Response) -> Response:
 @router.get("/me", response_model=UsuarioOutput, summary="Obter usuario autenticado")
 def me(current_user: Usuario = Depends(get_current_user)) -> UsuarioOutput:
     return UsuarioOutput.from_entity(current_user)
+
+
+@router.put("/me/tema", response_model=UsuarioOutput, summary="Atualizar tema do usuario autenticado")
+def atualizar_tema(
+    payload: UsuarioTemaInput,
+    current_user: Usuario = Depends(get_current_user),
+    service: UsuarioService = Depends(get_usuario_service),
+) -> UsuarioOutput:
+    usuario = service.atualizar_tema(current_user.id, payload.tema)
+    if usuario is None:
+        return UsuarioOutput.from_entity(current_user)
+    return UsuarioOutput.from_entity(usuario)

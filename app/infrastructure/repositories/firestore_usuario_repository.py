@@ -96,6 +96,7 @@ class FirestoreUsuarioRepository(UsuarioRepository):
             username = str(dados["email"]).strip().lower()
 
         dados["username"] = self._normalize_username(username or "")
+        dados["tema"] = dados.get("tema") or "dark"
         dados.pop("email", None)
         return Usuario.model_validate(dados)
 

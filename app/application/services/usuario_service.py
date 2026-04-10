@@ -5,7 +5,7 @@ from app.application.dtos.usuario_dto import UsuarioCreateInput, UsuarioUpdateIn
 from app.core.cache import MemoryCache
 from app.core.config import Settings
 from app.core.security import hash_password
-from app.domain.entities.usuario import RoleUsuario, Usuario
+from app.domain.entities.usuario import RoleUsuario, TemaUsuario, Usuario
 from app.domain.repositories.equipe_repository import EquipeRepository
 from app.domain.repositories.usuario_repository import UsuarioRepository
 
@@ -47,6 +47,7 @@ class UsuarioService:
             curso=payload.curso,
             periodo=payload.periodo,
             ativo=payload.ativo,
+            tema=payload.tema,
             senhaHash=hash_password(payload.senha),
         )
         criado = self.repository.criar(usuario)
@@ -65,6 +66,7 @@ class UsuarioService:
             curso=payload.curso,
             periodo=payload.periodo,
             ativo=True,
+            tema=payload.tema,
             senhaHash=hash_password(payload.senha),
         )
         criado = self.repository.criar(usuario)
@@ -96,6 +98,7 @@ class UsuarioService:
             curso=curso,
             periodo=periodo,
             ativo=payload.ativo,
+            tema=payload.tema,
             senhaHash=hash_password(payload.senha) if payload.senha else atual.senhaHash,
         )
         resultado = self.repository.atualizar(usuario_id, usuario_atualizado)
@@ -116,8 +119,19 @@ class UsuarioService:
             curso=atual.curso,
             periodo=atual.periodo,
             ativo=atual.ativo,
+            tema=atual.tema,
             senhaHash=atual.senhaHash,
         )
+        resultado = self.repository.atualizar(usuario_id, usuario_atualizado)
+        self._invalidar_cache()
+        return resultado
+
+    def atualizar_tema(self, usuario_id: int, tema: TemaUsuario) -> Usuario | None:
+        atual = self.repository.obter_por_id(usuario_id)
+        if atual is None:
+            return None
+
+        usuario_atualizado = atual.model_copy(update={"tema": tema})
         resultado = self.repository.atualizar(usuario_id, usuario_atualizado)
         self._invalidar_cache()
         return resultado
@@ -167,6 +181,7 @@ class UsuarioService:
                 curso=None,
                 periodo=None,
                 ativo=True,
+                tema=TemaUsuario.DARK,
                 senhaHash=hash_password(senha),
             )
         )

@@ -10,6 +10,12 @@ class RoleUsuario(str, Enum):
     VISITANTE = "visitante"
 
 
+class TemaUsuario(str, Enum):
+    DARK = "dark"
+    LIGHT = "light"
+    SYSTEM = "system"
+
+
 class Usuario(BaseModel):
     id: int
     nome: str = Field(min_length=2)
@@ -19,4 +25,5 @@ class Usuario(BaseModel):
     curso: str | None = None
     periodo: str | None = None
     ativo: bool = True
+    tema: TemaUsuario = TemaUsuario.DARK
     senhaHash: str = Field(min_length=1)
