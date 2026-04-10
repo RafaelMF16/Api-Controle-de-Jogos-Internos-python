@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 
-from app.domain.entities.usuario import RoleUsuario, Usuario
+from app.domain.entities.usuario import RoleUsuario, TemaUsuario, Usuario
 
 
 class UsuarioBaseInput(BaseModel):
@@ -11,6 +11,7 @@ class UsuarioBaseInput(BaseModel):
     curso: str | None = None
     periodo: str | None = None
     ativo: bool = True
+    tema: TemaUsuario = TemaUsuario.DARK
 
     @model_validator(mode="after")
     def normalizar_campos(self) -> "UsuarioBaseInput":
@@ -39,6 +40,7 @@ class VisitorRegisterInput(BaseModel):
     senha: str = Field(min_length=6)
     curso: str = Field(min_length=2)
     periodo: str = Field(min_length=1)
+    tema: TemaUsuario = TemaUsuario.DARK
 
     @model_validator(mode="after")
     def normalizar_campos(self) -> "VisitorRegisterInput":
@@ -59,6 +61,7 @@ class UsuarioOutput(BaseModel):
     curso: str | None = None
     periodo: str | None = None
     ativo: bool = True
+    tema: TemaUsuario = TemaUsuario.DARK
 
     @classmethod
     def from_entity(cls, usuario: Usuario) -> "UsuarioOutput":
@@ -71,4 +74,9 @@ class UsuarioOutput(BaseModel):
             curso=usuario.curso,
             periodo=usuario.periodo,
             ativo=usuario.ativo,
+            tema=usuario.tema,
         )
+
+
+class UsuarioTemaInput(BaseModel):
+    tema: TemaUsuario
