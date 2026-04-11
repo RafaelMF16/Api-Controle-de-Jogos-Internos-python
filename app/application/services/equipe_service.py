@@ -128,15 +128,14 @@ class EquipeService:
         self.cache.invalidate_prefix("dashboard:")
 
     def _montar_membros(self, payload: EquipeInput, equipe_id: int) -> list[Membro]:
-        if payload.modalidade == ModalidadeEquipe.NATACAO:
-            return []
-
         return [
             Membro(
                 id=item.id or (equipe_id * 1000 + index),
                 nome=item.nome,
                 habilidades=item.habilidades,
                 funcao=item.funcao,
+                nivel=item.nivel,
+                especialidade=item.especialidade,
                 usuarioId=item.usuarioId,
             )
             for index, item in enumerate(payload.membros, start=1)
@@ -144,6 +143,25 @@ class EquipeService:
 
     def _validar_limites_e_consistencia(self, equipe: Equipe) -> None:
         if equipe.modalidade == ModalidadeEquipe.NATACAO:
+            if len(equipe.membros) != 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Inscricoes individuais precisam ter exatamente um atleta principal.",
+                )
+
+            atleta = equipe.membros[0]
+            if not atleta.nivel:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Informe o nivel do atleta na inscricao individual.",
+                )
+
+            if not atleta.especialidade:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Informe a especialidade do atleta na inscricao individual.",
+                )
+
             return
 
         limite = obter_limite_integrantes(equipe.modalidade)

@@ -112,6 +112,8 @@ class VertexPredictionProvider(PredictionProvider):
                     "nome": membro.nome,
                     "funcao": membro.funcao,
                     "habilidades": membro.habilidades,
+                    "nivel": membro.nivel,
+                    "especialidade": membro.especialidade,
                 }
                 for membro in participante.membros
             ],
