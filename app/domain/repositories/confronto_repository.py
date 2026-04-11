@@ -23,7 +23,26 @@ class ConfrontoRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def contar(self) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def listar_proximos(self, limit: int = 5) -> list[Confronto]:
+        raise NotImplementedError
+
+    @abstractmethod
     def obter_por_id(self, confronto_id: int) -> Confronto | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def listar_historico_relevante(
+        self,
+        *,
+        modalidade: str,
+        participante_ids: list[int],
+        nomes_participantes: list[str],
+        limit: int = 20,
+    ) -> list[Confronto]:
         raise NotImplementedError
 
     @abstractmethod

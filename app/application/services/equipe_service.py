@@ -29,11 +29,17 @@ class EquipeService:
         self,
         *,
         categoria: str | None = None,
+        modalidade: str | None = None,
+        nome_exato: str | None = None,
+        usuario_id: int | None = None,
         limit: int = 10,
         cursor: str | None = None,
     ) -> CursorPaginatedResponse[Equipe]:
         return self.repository.listar_paginado(
             categoria=categoria,
+            modalidade=modalidade,
+            nome_exato=nome_exato,
+            usuario_id=usuario_id,
             limit=limit,
             cursor=cursor,
         )
@@ -90,7 +96,7 @@ class EquipeService:
         if self.confronto_repository.existe_com_participante(equipe_id, equipe.nome):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Nao e possivel remover este cadastro porque existem confrontos vinculados a ele.",
+                detail="Não é possível remover este cadastro porque existem confrontos vinculados a ele.",
             )
 
         removeu = self.repository.remover(equipe_id)
@@ -117,7 +123,7 @@ class EquipeService:
         if existente is not None and existente.id != equipe_id_atual:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Ja existe uma equipe cadastrada com este nome.",
+                detail="Já existe uma equipe cadastrada com este nome.",
             )
 
     def _proximo_id_equipe(self) -> int:
@@ -146,20 +152,20 @@ class EquipeService:
             if len(equipe.membros) != 1:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Inscricoes individuais precisam ter exatamente um atleta principal.",
+                    detail="Inscrições individuais precisam ter exatamente um atleta principal.",
                 )
 
             atleta = equipe.membros[0]
             if not atleta.nivel:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Informe o nivel do atleta na inscricao individual.",
+                    detail="Informe o nível do atleta na inscrição individual.",
                 )
 
             if not atleta.especialidade:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Informe a especialidade do atleta na inscricao individual.",
+                    detail="Informe a especialidade do atleta na inscrição individual.",
                 )
 
             return
@@ -168,21 +174,21 @@ class EquipeService:
         if len(equipe.membros) > limite:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A modalidade {equipe.modalidade.value} permite no maximo {limite} integrantes.",
+                detail=f"A modalidade {equipe.modalidade.value} permite no máximo {limite} integrantes.",
             )
 
         capitaes = [membro for membro in equipe.membros if eh_membro_capitao(membro)]
         if len(capitaes) != 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A equipe precisa ter exatamente um membro com funcao de Capitao.",
+                detail="A equipe precisa ter exatamente um membro com função de Capitão.",
             )
 
         for membro in equipe.membros:
             if len(membro.habilidades) > MAX_HABILIDADES_POR_MEMBRO:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Cada integrante pode ter no maximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.",
+                    detail=f"Cada integrante pode ter no máximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.",
                 )
 
         equipe.responsavel = capitaes[0].nome

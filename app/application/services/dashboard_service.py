@@ -27,16 +27,12 @@ class DashboardService:
         )
 
     def _build_overview(self) -> ResumoDashboard:
-        equipes = self.equipe_repository.listar()
-        confrontos = self.confronto_repository.listar()
-        proximos_confrontos = [
-            confronto
-            for confronto in confrontos
-            if confronto.status != StatusConfronto.ENCERRADO
-        ]
-
         return ResumoDashboard(
-            totalEquipes=len(equipes),
-            totalConfrontos=len(confrontos),
-            proximosConfrontos=proximos_confrontos[:5],
+            totalEquipes=self.equipe_repository.contar(),
+            totalConfrontos=self.confronto_repository.contar(),
+            proximosConfrontos=[
+                confronto
+                for confronto in self.confronto_repository.listar_proximos(limit=5)
+                if confronto.status != StatusConfronto.ENCERRADO
+            ][:5],
         )

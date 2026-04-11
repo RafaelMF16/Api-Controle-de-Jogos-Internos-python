@@ -20,10 +20,28 @@ class FirestoreEquipeRepository(EquipeRepository):
         self,
         *,
         categoria: str | None,
+        modalidade: str | None,
+        nome_exato: str | None,
+        usuario_id: int | None,
         limit: int,
         cursor: str | None,
     ) -> CursorPaginatedResponse[Equipe]:
-        query = self.collection.order_by("id", direction=Query.DESCENDING)
+        if modalidade or nome_exato or usuario_id is not None or categoria == "individual":
+            return self._listar_paginado_sem_indice_composto(
+                categoria=categoria,
+                modalidade=modalidade,
+                nome_exato=nome_exato,
+                usuario_id=usuario_id,
+                limit=limit,
+                cursor=cursor,
+            )
+
+        query = self._build_filtered_query(
+            categoria=categoria,
+            modalidade=modalidade,
+            nome_exato=nome_exato,
+            usuario_id=usuario_id,
+        ).order_by("id", direction=Query.DESCENDING)
 
         if cursor:
             query = query.start_after({"id": int(cursor)})
@@ -59,21 +77,106 @@ class FirestoreEquipeRepository(EquipeRepository):
             has_next=has_next,
         )
 
+    def _listar_paginado_sem_indice_composto(
+        self,
+        *,
+        categoria: str | None,
+        modalidade: str | None,
+        nome_exato: str | None,
+        usuario_id: int | None,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPaginatedResponse[Equipe]:
+        documentos = self._build_safe_filtered_query(
+            categoria=categoria,
+            modalidade=modalidade,
+            nome_exato=nome_exato,
+            usuario_id=usuario_id,
+        ).stream()
+
+        itens: list[Equipe] = []
+        for documento in documentos:
+            equipe = self._to_equipe(documento.to_dict())
+            if self._documento_confere(
+                equipe,
+                categoria=categoria,
+                modalidade=modalidade,
+                nome_exato=nome_exato,
+                usuario_id=usuario_id,
+            ):
+                itens.append(equipe)
+
+        itens.sort(key=lambda equipe: equipe.id, reverse=True)
+
+        if cursor:
+            cursor_id = int(cursor)
+            itens = [equipe for equipe in itens if equipe.id < cursor_id]
+
+        itens_pagina = itens[:limit]
+        has_next = len(itens) > limit
+        next_cursor = str(itens_pagina[-1].id) if has_next and itens_pagina else None
+
+        return CursorPaginatedResponse(
+            items=itens_pagina,
+            page_size=limit,
+            next_cursor=next_cursor,
+            has_next=has_next,
+        )
+
+    def contar(
+        self,
+        *,
+        categoria: str | None = None,
+        modalidade: str | None = None,
+        nome_exato: str | None = None,
+        usuario_id: int | None = None,
+    ) -> int:
+        if categoria == "coletivo" and modalidade is None:
+            total = self._count_query(self._build_filtered_query(
+                categoria=None,
+                modalidade=None,
+                nome_exato=nome_exato,
+                usuario_id=usuario_id,
+            ))
+            individuais = self._count_query(self._build_filtered_query(
+                categoria="individual",
+                modalidade=None,
+                nome_exato=nome_exato,
+                usuario_id=usuario_id,
+            ))
+            return max(total - individuais, 0)
+
+        query = self._build_filtered_query(
+            categoria=categoria,
+            modalidade=modalidade,
+            nome_exato=nome_exato,
+            usuario_id=usuario_id,
+        )
+        return self._count_query(query)
+
     def obter_por_id(self, equipe_id: int) -> Equipe | None:
         documento = self.collection.document(str(equipe_id)).get()
         if not documento.exists:
             return None
         return self._to_equipe(documento.to_dict())
 
+    def obter_por_ids(self, equipe_ids: list[int]) -> list[Equipe]:
+        itens: list[Equipe] = []
+        for equipe_id in dict.fromkeys(equipe_ids):
+            equipe = self.obter_por_id(equipe_id)
+            if equipe is not None:
+                itens.append(equipe)
+        return itens
+
     def obter_por_nome_modalidade(self, nome: str, modalidade: str) -> Equipe | None:
         nome_normalizado = self._normalizar_nome(nome)
         documentos = self.collection.where(
             filter=FieldFilter("nomeNormalizado", "==", nome_normalizado)
-        ).where(
-            filter=FieldFilter("modalidade", "==", modalidade)
-        ).limit(1).stream()
+        ).stream()
         for documento in documentos:
-            return self._to_equipe(documento.to_dict())
+            equipe = self._to_equipe(documento.to_dict())
+            if equipe.modalidade.value == modalidade:
+                return equipe
 
         documentos_legados = self.collection.where(
             filter=FieldFilter("modalidade", "==", modalidade)
@@ -133,6 +236,86 @@ class FirestoreEquipeRepository(EquipeRepository):
             dados = documento.to_dict() or {}
             return int(dados.get("id", 0))
         return 0
+
+    def _build_filtered_query(
+        self,
+        *,
+        categoria: str | None,
+        modalidade: str | None,
+        nome_exato: str | None,
+        usuario_id: int | None,
+    ):
+        query = self.collection
+
+        if modalidade:
+            query = query.where(filter=FieldFilter("modalidade", "==", modalidade))
+        elif categoria == "individual":
+            query = query.where(filter=FieldFilter("modalidade", "==", ModalidadeEquipe.NATACAO.value))
+
+        if nome_exato:
+            query = query.where(filter=FieldFilter("nomeNormalizado", "==", self._normalizar_nome(nome_exato)))
+
+        if usuario_id is not None:
+            query = query.where(filter=FieldFilter("usuarioId", "==", usuario_id))
+
+        return query
+
+    def _build_safe_filtered_query(
+        self,
+        *,
+        categoria: str | None,
+        modalidade: str | None,
+        nome_exato: str | None,
+        usuario_id: int | None,
+    ):
+        if nome_exato:
+            return self.collection.where(
+                filter=FieldFilter("nomeNormalizado", "==", self._normalizar_nome(nome_exato))
+            )
+
+        if usuario_id is not None:
+            return self.collection.where(filter=FieldFilter("usuarioId", "==", usuario_id))
+
+        if modalidade:
+            return self.collection.where(filter=FieldFilter("modalidade", "==", modalidade))
+
+        if categoria == "individual":
+            return self.collection.where(filter=FieldFilter("modalidade", "==", ModalidadeEquipe.NATACAO.value))
+
+        return self.collection
+
+    def _count_query(self, query) -> int:
+        try:
+            resultado = query.count().get()
+            if not resultado:
+                return 0
+
+            primeiro = resultado[0]
+            agregado = primeiro[0] if isinstance(primeiro, (list, tuple)) else primeiro
+            return int(getattr(agregado, "value", 0) or 0)
+        except Exception:
+            return sum(1 for _ in query.stream())
+
+    @classmethod
+    def _documento_confere(
+        cls,
+        equipe: Equipe,
+        *,
+        categoria: str | None,
+        modalidade: str | None,
+        nome_exato: str | None,
+        usuario_id: int | None,
+    ) -> bool:
+        if modalidade and equipe.modalidade.value != modalidade:
+            return False
+
+        if nome_exato and cls._normalizar_nome(equipe.nome) != cls._normalizar_nome(nome_exato):
+            return False
+
+        if usuario_id is not None and equipe.usuarioId != usuario_id:
+            return False
+
+        return cls._categoria_confere(equipe, categoria)
 
     @staticmethod
     def _normalizar_nome(nome: str) -> str:

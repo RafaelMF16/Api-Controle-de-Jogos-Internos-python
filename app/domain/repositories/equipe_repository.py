@@ -14,13 +14,31 @@ class EquipeRepository(ABC):
         self,
         *,
         categoria: str | None,
+        modalidade: str | None,
+        nome_exato: str | None,
+        usuario_id: int | None,
         limit: int,
         cursor: str | None,
     ) -> CursorPaginatedResponse[Equipe]:
         raise NotImplementedError
 
     @abstractmethod
+    def contar(
+        self,
+        *,
+        categoria: str | None = None,
+        modalidade: str | None = None,
+        nome_exato: str | None = None,
+        usuario_id: int | None = None,
+    ) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
     def obter_por_id(self, equipe_id: int) -> Equipe | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def obter_por_ids(self, equipe_ids: list[int]) -> list[Equipe]:
         raise NotImplementedError
 
     @abstractmethod
