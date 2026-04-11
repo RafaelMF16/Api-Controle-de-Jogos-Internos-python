@@ -61,11 +61,70 @@ class FirestoreConfrontoRepository(ConfrontoRepository):
             has_next=has_next,
         )
 
+    def contar(self) -> int:
+        return self._count_query(self.collection)
+
+    def listar_proximos(self, limit: int = 5) -> list[Confronto]:
+        itens: dict[int, Confronto] = {}
+
+        for status in (StatusConfronto.AO_VIVO, StatusConfronto.AGENDADO):
+            documentos = self.collection.where(
+                filter=FieldFilter("status", "==", status.value)
+            ).limit(limit).stream()
+            for documento in documentos:
+                confronto = Confronto.model_validate(documento.to_dict())
+                itens[confronto.id] = confronto
+
+        return sorted(itens.values(), key=lambda confronto: confronto.id, reverse=True)[:limit]
+
     def obter_por_id(self, confronto_id: int) -> Confronto | None:
         documento = self.collection.document(str(confronto_id)).get()
         if not documento.exists:
             return None
         return Confronto.model_validate(documento.to_dict())
+
+    def listar_historico_relevante(
+        self,
+        *,
+        modalidade: str,
+        participante_ids: list[int],
+        nomes_participantes: list[str],
+        limit: int = 20,
+    ) -> list[Confronto]:
+        historico: dict[int, Confronto] = {}
+
+        for participante_id in dict.fromkeys(participante_ids):
+            if participante_id <= 0:
+                continue
+
+            for campo in ("participanteAId", "participanteBId"):
+                documentos = self.collection.where(
+                    filter=FieldFilter("modalidade", "==", modalidade)
+                ).where(
+                    filter=FieldFilter("status", "==", StatusConfronto.ENCERRADO.value)
+                ).where(
+                    filter=FieldFilter(campo, "==", participante_id)
+                ).limit(limit).stream()
+
+                for documento in documentos:
+                    confronto = Confronto.model_validate(documento.to_dict())
+                    historico[confronto.id] = confronto
+
+        for nome in dict.fromkeys(filter(None, nomes_participantes)):
+            for campo in ("equipeA", "equipeB"):
+                documentos = self.collection.where(
+                    filter=FieldFilter("modalidade", "==", modalidade)
+                ).where(
+                    filter=FieldFilter("status", "==", StatusConfronto.ENCERRADO.value)
+                ).where(
+                    filter=FieldFilter(campo, "==", nome)
+                ).limit(limit).stream()
+
+                for documento in documentos:
+                    confronto = Confronto.model_validate(documento.to_dict())
+                    historico[confronto.id] = confronto
+
+        return sorted(historico.values(), key=lambda confronto: confronto.id, reverse=True)[:limit]
 
     def existe_com_participante(self, participante_id: int, nome: str | None = None) -> bool:
         if self._existe_por_campo("participanteAId", participante_id):
@@ -117,3 +176,15 @@ class FirestoreConfrontoRepository(ConfrontoRepository):
         for _ in documentos:
             return True
         return False
+
+    def _count_query(self, query) -> int:
+        try:
+            resultado = query.count().get()
+            if not resultado:
+                return 0
+
+            primeiro = resultado[0]
+            agregado = primeiro[0] if isinstance(primeiro, (list, tuple)) else primeiro
+            return int(getattr(agregado, "value", 0) or 0)
+        except Exception:
+            return sum(1 for _ in query.stream())
