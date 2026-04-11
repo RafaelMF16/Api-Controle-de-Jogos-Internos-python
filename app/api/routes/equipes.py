@@ -6,7 +6,7 @@ from app.application.dtos.equipe_dto import EquipeInput, MembroInput
 from app.application.services.equipe_service import EquipeService
 from app.application.services.deletion_audit_service import DeletionAuditService
 from app.application.services.usuario_service import UsuarioService
-from app.domain.entities.equipe import CAPITAO_FUNCAO, Equipe, ModalidadeEquipe, eh_membro_capitao
+from app.domain.entities.equipe import ATLETA_FUNCAO, CAPITAO_FUNCAO, Equipe, ModalidadeEquipe, eh_membro_capitao
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
 router = APIRouter(prefix="/equipes", tags=["Equipes"])
@@ -62,9 +62,11 @@ def criar_equipe(
                     "periodo": current_user.periodo,
                     "usuarioId": current_user.id,
                     "responsavel": None,
-                    "membros": [],
+                    "membros": [_montar_atleta_individual(payload.membros, current_user)],
                 }
             )
+        else:
+            payload = payload.model_copy(update={"membros": [_montar_atleta_admin(payload.membros, payload)]})
 
         return service.criar_equipe(payload)
 
@@ -109,11 +111,13 @@ def atualizar_equipe(
                     "periodo": current_user.periodo,
                     "usuarioId": current_user.id,
                     "responsavel": None,
-                    "membros": [],
+                    "membros": [_montar_atleta_individual(payload.membros, current_user)],
                 }
             )
         elif current_user.role != RoleUsuario.ADMIN:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
+        else:
+            payload = payload.model_copy(update={"membros": [_montar_atleta_admin(payload.membros, payload)]})
     else:
         if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.CAPITAO}:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Voce nao tem permissao para esta acao.")
@@ -245,5 +249,33 @@ def _to_membro_entity(membro: MembroInput):
         nome=membro.nome,
         habilidades=membro.habilidades,
         funcao=membro.funcao,
+        nivel=membro.nivel,
+        especialidade=membro.especialidade,
         usuarioId=membro.usuarioId,
+    )
+
+
+def _montar_atleta_individual(membros: list[MembroInput], current_user: Usuario) -> MembroInput:
+    atleta_existente = membros[0] if membros else None
+    return MembroInput(
+        id=atleta_existente.id if atleta_existente else None,
+        nome=current_user.nome,
+        habilidades=atleta_existente.habilidades if atleta_existente else [],
+        funcao=ATLETA_FUNCAO,
+        nivel=atleta_existente.nivel if atleta_existente else None,
+        especialidade=atleta_existente.especialidade if atleta_existente else None,
+        usuarioId=current_user.id,
+    )
+
+
+def _montar_atleta_admin(membros: list[MembroInput], payload: EquipeInput) -> MembroInput:
+    atleta_existente = membros[0] if membros else None
+    return MembroInput(
+        id=atleta_existente.id if atleta_existente else None,
+        nome=payload.nome,
+        habilidades=atleta_existente.habilidades if atleta_existente else [],
+        funcao=ATLETA_FUNCAO,
+        nivel=atleta_existente.nivel if atleta_existente else None,
+        especialidade=atleta_existente.especialidade if atleta_existente else None,
+        usuarioId=payload.usuarioId,
     )

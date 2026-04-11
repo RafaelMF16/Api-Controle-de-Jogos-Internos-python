@@ -83,7 +83,20 @@ class HeuristicPredictionProvider(PredictionProvider):
             return 0.0
 
         if participante.modalidade == ModalidadeEquipe.NATACAO:
-            return 0.0
+            atleta = participante.membros[0] if participante.membros else None
+            if atleta is None:
+                return 0.0
+
+            habilidades = {habilidade.strip().lower() for habilidade in atleta.habilidades if habilidade.strip()}
+            score = min(len(habilidades) * 2, 6)
+            score += {
+                "iniciante": 1.5,
+                "intermediario": 4.0,
+                "avancado": 7.0,
+            }.get((atleta.nivel or "").strip().lower(), 0.0)
+            if atleta.especialidade:
+                score += 2.5
+            return score
 
         total_membros = len(participante.membros)
         habilidades = {habilidade.strip().lower() for membro in participante.membros for habilidade in membro.habilidades if habilidade.strip()}
@@ -102,20 +115,30 @@ class HeuristicPredictionProvider(PredictionProvider):
         motivos: list[str] = []
 
         if historico_a != historico_b:
-            motivos.append("o histórico recente na modalidade pesa a favor do favorito")
+            motivos.append("o historico recente na modalidade pesa a favor do favorito")
 
-        if confronto.modalidade != ModalidadeEquipe.NATACAO:
+        if confronto.modalidade == ModalidadeEquipe.NATACAO:
+            atleta_a = participante_a.membros[0] if participante_a and participante_a.membros else None
+            atleta_b = participante_b.membros[0] if participante_b and participante_b.membros else None
+
+            if (atleta_a and atleta_b) and ((atleta_a.nivel or "") != (atleta_b.nivel or "")):
+                motivos.append("o nivel declarado dos atletas ajuda a diferenciar o duelo")
+            elif (atleta_a and atleta_b) and ((atleta_a.especialidade or "") != (atleta_b.especialidade or "")):
+                motivos.append("as especialidades cadastradas ajudam a projetar vantagem")
+            elif (atleta_a and atleta_b) and (len(atleta_a.habilidades) != len(atleta_b.habilidades)):
+                motivos.append("as habilidades cadastradas criam uma pequena diferenca na analise")
+        else:
             membros_a = len(participante_a.membros) if participante_a else 0
             membros_b = len(participante_b.membros) if participante_b else 0
             habilidades_a = len({habilidade.strip().lower() for membro in (participante_a.membros if participante_a else []) for habilidade in membro.habilidades if habilidade.strip()})
             habilidades_b = len({habilidade.strip().lower() for membro in (participante_b.membros if participante_b else []) for habilidade in membro.habilidades if habilidade.strip()})
 
             if membros_a != membros_b:
-                motivos.append("a quantidade de membros influencia a projeção")
+                motivos.append("a quantidade de membros influencia a projecao")
             elif habilidades_a != habilidades_b:
                 motivos.append("a variedade de habilidades declaradas ajuda a diferenciar as equipes")
 
         if not motivos:
             motivos.append("os dados cadastrados indicam confronto equilibrado")
 
-        return f"{favorito} aparece levemente à frente porque {motivos[0]}."
+        return f"{favorito} aparece levemente a frente porque {motivos[0]}."

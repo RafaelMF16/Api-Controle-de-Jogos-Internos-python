@@ -1,7 +1,7 @@
 from google.cloud.firestore_v1 import FieldFilter, Query
 
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
-from app.domain.entities.equipe import CAPITAO_FUNCAO, Equipe
+from app.domain.entities.equipe import ATLETA_FUNCAO, CAPITAO_FUNCAO, Equipe
 from app.domain.entities.equipe import ModalidadeEquipe
 from app.domain.repositories.equipe_repository import EquipeRepository
 from app.infrastructure.persistence.firestore.firestore_client import FirestoreDatabase
@@ -145,8 +145,43 @@ class FirestoreEquipeRepository(EquipeRepository):
     @staticmethod
     def _normalizar_dados_legados(dados: dict) -> dict:
         if dados.get("modalidade") == ModalidadeEquipe.NATACAO.value:
-            dados["membros"] = []
             dados["responsavel"] = None
+            membros_brutos = dados.get("membros") or []
+            base_id = int(dados.get("id", 0) or 0) * 1000
+            atletas = []
+
+            for index, membro in enumerate(membros_brutos[:1], start=1):
+                if not isinstance(membro, dict):
+                    continue
+
+                atleta_normalizado = dict(membro)
+                atleta_normalizado["id"] = atleta_normalizado.get("id") or (base_id + index)
+                atleta_normalizado["nome"] = atleta_normalizado.get("nome") or dados.get("nome")
+                atleta_normalizado["funcao"] = ATLETA_FUNCAO
+                atleta_normalizado["usuarioId"] = atleta_normalizado.get("usuarioId", dados.get("usuarioId"))
+                atleta_normalizado["habilidades"] = [
+                    habilidade.strip()
+                    for habilidade in (atleta_normalizado.get("habilidades") or [])
+                    if isinstance(habilidade, str) and habilidade.strip()
+                ][:3]
+                atleta_normalizado["nivel"] = (atleta_normalizado.get("nivel") or "").strip() or None
+                atleta_normalizado["especialidade"] = (atleta_normalizado.get("especialidade") or "").strip() or None
+                atletas.append(atleta_normalizado)
+
+            if not atletas:
+                atletas.append(
+                    {
+                        "id": base_id + 1,
+                        "nome": dados.get("nome"),
+                        "habilidades": [],
+                        "funcao": ATLETA_FUNCAO,
+                        "nivel": None,
+                        "especialidade": None,
+                        "usuarioId": dados.get("usuarioId"),
+                    }
+                )
+
+            dados["membros"] = atletas
             return dados
 
         membros_brutos = dados.get("membros") or []

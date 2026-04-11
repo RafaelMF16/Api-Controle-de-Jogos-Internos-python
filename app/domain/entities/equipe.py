@@ -3,6 +3,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, model_validator
 
 CAPITAO_FUNCAO = "Capitao"
+ATLETA_FUNCAO = "Atleta"
 MAX_HABILIDADES_POR_MEMBRO = 3
 LIMITES_INTEGRANTES_POR_MODALIDADE: dict[str, int] = {
     "Futsal": 14,
@@ -26,6 +27,8 @@ class Membro(BaseModel):
     nome: str = Field(min_length=2)
     habilidades: list[str] = Field(default_factory=list, max_length=MAX_HABILIDADES_POR_MEMBRO)
     funcao: str | None = None
+    nivel: str | None = None
+    especialidade: str | None = None
     usuarioId: int | None = None
 
     @model_validator(mode="after")
@@ -33,6 +36,8 @@ class Membro(BaseModel):
         self.habilidades = [habilidade.strip() for habilidade in self.habilidades if habilidade and habilidade.strip()]
         if len(self.habilidades) > MAX_HABILIDADES_POR_MEMBRO:
             raise ValueError(f"Cada membro pode ter no maximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.")
+        self.nivel = self.nivel.strip() if self.nivel and self.nivel.strip() else None
+        self.especialidade = self.especialidade.strip() if self.especialidade and self.especialidade.strip() else None
         return self
 
 
@@ -51,7 +56,6 @@ class Equipe(BaseModel):
     def validar_por_categoria(self):
         if self.modalidade == ModalidadeEquipe.NATACAO:
             self.responsavel = None
-            self.membros = []
             return self
 
         self.usuarioId = None

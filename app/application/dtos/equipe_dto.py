@@ -8,6 +8,8 @@ class MembroInput(BaseModel):
     nome: str = Field(min_length=2)
     habilidades: list[str] = Field(default_factory=list, max_length=MAX_HABILIDADES_POR_MEMBRO)
     funcao: str | None = None
+    nivel: str | None = None
+    especialidade: str | None = None
     usuarioId: int | None = None
 
     @model_validator(mode="after")
@@ -15,6 +17,8 @@ class MembroInput(BaseModel):
         self.habilidades = [habilidade.strip() for habilidade in self.habilidades if habilidade and habilidade.strip()]
         if len(self.habilidades) > MAX_HABILIDADES_POR_MEMBRO:
             raise ValueError(f"Cada membro pode ter no maximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.")
+        self.nivel = self.nivel.strip() if self.nivel and self.nivel.strip() else None
+        self.especialidade = self.especialidade.strip() if self.especialidade and self.especialidade.strip() else None
         return self
 
 
@@ -32,7 +36,6 @@ class EquipeInput(BaseModel):
     def validar_por_categoria(self):
         if self.modalidade == ModalidadeEquipe.NATACAO:
             self.responsavel = None
-            self.membros = []
             return self
 
         if not self.curso or not self.periodo:
