@@ -6,3 +6,6 @@ venv/
 *.pyo
 *.pyd
 .env
+
+# Claude Code
+CLAUDE.md
