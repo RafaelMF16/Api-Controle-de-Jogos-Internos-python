@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 
+from app.application.utils.profanity_filter import contem_palavrao
 from app.domain.entities.equipe import MAX_HABILIDADES_POR_MEMBRO, MODALIDADES_INDIVIDUAIS, ModalidadeEquipe
 
 
@@ -22,6 +23,8 @@ class MembroInput(BaseModel):
         self.especialidade = self.especialidade.strip() if self.especialidade and self.especialidade.strip() else None
         if self.genero:
             self.genero = self.genero.strip().upper() or None
+        if contem_palavrao(self.nome):
+            raise ValueError("Nome do membro contém conteúdo inapropriado.")
         return self
 
 
@@ -37,6 +40,11 @@ class EquipeInput(BaseModel):
 
     @model_validator(mode="after")
     def validar_por_categoria(self):
+        if contem_palavrao(self.nome):
+            raise ValueError("Nome da equipe contém conteúdo inapropriado.")
+        if self.responsavel and contem_palavrao(self.responsavel):
+            raise ValueError("Nome do responsável contém conteúdo inapropriado.")
+
         if self.modalidade in MODALIDADES_INDIVIDUAIS:
             self.responsavel = None
             return self
