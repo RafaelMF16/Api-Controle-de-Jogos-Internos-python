@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from app.application.services.prediction_provider import PredictionProvider
 from app.domain.entities.confronto import Confronto, PrevisaoConfronto, StatusConfronto, StatusPrevisao
-from app.domain.entities.equipe import Equipe, ModalidadeEquipe
+from app.domain.entities.equipe import Equipe, MODALIDADES_INDIVIDUAIS, ModalidadeEquipe
 
 
 class HeuristicPredictionProvider(PredictionProvider):
@@ -82,7 +82,7 @@ class HeuristicPredictionProvider(PredictionProvider):
         if participante is None:
             return 0.0
 
-        if participante.modalidade == ModalidadeEquipe.NATACAO:
+        if participante.modalidade in MODALIDADES_INDIVIDUAIS:
             atleta = participante.membros[0] if participante.membros else None
             if atleta is None:
                 return 0.0
@@ -94,8 +94,6 @@ class HeuristicPredictionProvider(PredictionProvider):
                 "intermediario": 4.0,
                 "avancado": 7.0,
             }.get((atleta.nivel or "").strip().lower(), 0.0)
-            if atleta.especialidade:
-                score += 2.5
             return score
 
         total_membros = len(participante.membros)
@@ -117,14 +115,12 @@ class HeuristicPredictionProvider(PredictionProvider):
         if historico_a != historico_b:
             motivos.append("o historico recente na modalidade pesa a favor do favorito")
 
-        if confronto.modalidade == ModalidadeEquipe.NATACAO:
+        if confronto.modalidade in MODALIDADES_INDIVIDUAIS:
             atleta_a = participante_a.membros[0] if participante_a and participante_a.membros else None
             atleta_b = participante_b.membros[0] if participante_b and participante_b.membros else None
 
             if (atleta_a and atleta_b) and ((atleta_a.nivel or "") != (atleta_b.nivel or "")):
                 motivos.append("o nivel declarado dos atletas ajuda a diferenciar o duelo")
-            elif (atleta_a and atleta_b) and ((atleta_a.especialidade or "") != (atleta_b.especialidade or "")):
-                motivos.append("as especialidades cadastradas ajudam a projetar vantagem")
             elif (atleta_a and atleta_b) and (len(atleta_a.habilidades) != len(atleta_b.habilidades)):
                 motivos.append("as habilidades cadastradas criam uma pequena diferenca na analise")
         else:
