@@ -4,7 +4,7 @@ from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.dtos.equipe_dto import EquipeInput
 from app.core.cache import MemoryCache
 from app.core.config import Settings
-from app.domain.entities.equipe import CAPITAO_FUNCAO, MAX_HABILIDADES_POR_MEMBRO, Equipe, Membro, ModalidadeEquipe, eh_membro_capitao, obter_limite_integrantes
+from app.domain.entities.equipe import CAPITAO_FUNCAO, MAX_HABILIDADES_POR_MEMBRO, MODALIDADES_INDIVIDUAIS, Equipe, Membro, ModalidadeEquipe, eh_membro_capitao, obter_limite_integrantes
 from app.domain.repositories.confronto_repository import ConfrontoRepository
 from app.domain.repositories.equipe_repository import EquipeRepository
 from app.domain.repositories.usuario_repository import UsuarioRepository
@@ -116,7 +116,7 @@ class EquipeService:
         modalidade: ModalidadeEquipe,
         equipe_id_atual: int | None = None,
     ) -> None:
-        if modalidade == ModalidadeEquipe.NATACAO:
+        if modalidade in MODALIDADES_INDIVIDUAIS:
             return
 
         existente = self.repository.obter_por_nome_modalidade(nome.strip(), modalidade.value)
@@ -142,13 +142,14 @@ class EquipeService:
                 funcao=item.funcao,
                 nivel=item.nivel,
                 especialidade=item.especialidade,
+                genero=item.genero,
                 usuarioId=item.usuarioId,
             )
             for index, item in enumerate(payload.membros, start=1)
         ]
 
     def _validar_limites_e_consistencia(self, equipe: Equipe) -> None:
-        if equipe.modalidade == ModalidadeEquipe.NATACAO:
+        if equipe.modalidade in MODALIDADES_INDIVIDUAIS:
             if len(equipe.membros) != 1:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -162,12 +163,6 @@ class EquipeService:
                     detail="Informe o nível do atleta na inscrição individual.",
                 )
 
-            if not atleta.especialidade:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Informe a especialidade do atleta na inscrição individual.",
-                )
-
             return
 
         limite = obter_limite_integrantes(equipe.modalidade)
@@ -176,6 +171,14 @@ class EquipeService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"A modalidade {equipe.modalidade.value} permite no máximo {limite} integrantes.",
             )
+
+        if equipe.modalidade == ModalidadeEquipe.TENIS_DE_MESA and len(equipe.membros) == 2:
+            generos = [(membro.genero or "").upper() for membro in equipe.membros]
+            if sorted(generos) != ["F", "M"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="A dupla de Tênis de mesa deve ter 1 membro masculino (M) e 1 feminino (F).",
+                )
 
         capitaes = [membro for membro in equipe.membros if eh_membro_capitao(membro)]
         if len(capitaes) != 1:

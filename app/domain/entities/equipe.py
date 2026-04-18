@@ -9,8 +9,8 @@ LIMITES_INTEGRANTES_POR_MODALIDADE: dict[str, int] = {
     "Futsal": 14,
     "Volei": 12,
     "Queimada": 10,
-    "Basquete": 12,
-    "Natacao": 1,
+    "TenisDeMesa": 2,
+    "TenisDeMesaIndividual": 1,
 }
 
 
@@ -18,8 +18,11 @@ class ModalidadeEquipe(str, Enum):
     FUTSAL = "Futsal"
     VOLEI = "Volei"
     QUEIMADA = "Queimada"
-    BASQUETE = "Basquete"
-    NATACAO = "Natacao"
+    TENIS_DE_MESA = "TenisDeMesa"
+    TENIS_DE_MESA_INDIVIDUAL = "TenisDeMesaIndividual"
+
+
+MODALIDADES_INDIVIDUAIS: frozenset[ModalidadeEquipe] = frozenset({ModalidadeEquipe.TENIS_DE_MESA_INDIVIDUAL})
 
 
 class Membro(BaseModel):
@@ -29,6 +32,7 @@ class Membro(BaseModel):
     funcao: str | None = None
     nivel: str | None = None
     especialidade: str | None = None
+    genero: str | None = None
     usuarioId: int | None = None
 
     @model_validator(mode="after")
@@ -38,6 +42,8 @@ class Membro(BaseModel):
             raise ValueError(f"Cada membro pode ter no maximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.")
         self.nivel = self.nivel.strip() if self.nivel and self.nivel.strip() else None
         self.especialidade = self.especialidade.strip() if self.especialidade and self.especialidade.strip() else None
+        if self.genero:
+            self.genero = self.genero.strip().upper() or None
         return self
 
 
@@ -54,7 +60,7 @@ class Equipe(BaseModel):
 
     @model_validator(mode="after")
     def validar_por_categoria(self):
-        if self.modalidade == ModalidadeEquipe.NATACAO:
+        if self.modalidade in MODALIDADES_INDIVIDUAIS:
             self.responsavel = None
             return self
 

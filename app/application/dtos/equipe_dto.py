@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
 
-from app.domain.entities.equipe import MAX_HABILIDADES_POR_MEMBRO, ModalidadeEquipe
+from app.application.utils.profanity_filter import contem_palavrao
+from app.domain.entities.equipe import MAX_HABILIDADES_POR_MEMBRO, MODALIDADES_INDIVIDUAIS, ModalidadeEquipe
 
 
 class MembroInput(BaseModel):
@@ -10,6 +11,7 @@ class MembroInput(BaseModel):
     funcao: str | None = None
     nivel: str | None = None
     especialidade: str | None = None
+    genero: str | None = None
     usuarioId: int | None = None
 
     @model_validator(mode="after")
@@ -19,6 +21,10 @@ class MembroInput(BaseModel):
             raise ValueError(f"Cada membro pode ter no maximo {MAX_HABILIDADES_POR_MEMBRO} habilidades.")
         self.nivel = self.nivel.strip() if self.nivel and self.nivel.strip() else None
         self.especialidade = self.especialidade.strip() if self.especialidade and self.especialidade.strip() else None
+        if self.genero:
+            self.genero = self.genero.strip().upper() or None
+        if contem_palavrao(self.nome):
+            raise ValueError("Nome do membro contém conteúdo inapropriado.")
         return self
 
 
@@ -34,7 +40,12 @@ class EquipeInput(BaseModel):
 
     @model_validator(mode="after")
     def validar_por_categoria(self):
-        if self.modalidade == ModalidadeEquipe.NATACAO:
+        if contem_palavrao(self.nome):
+            raise ValueError("Nome da equipe contém conteúdo inapropriado.")
+        if self.responsavel and contem_palavrao(self.responsavel):
+            raise ValueError("Nome do responsável contém conteúdo inapropriado.")
+
+        if self.modalidade in MODALIDADES_INDIVIDUAIS:
             self.responsavel = None
             return self
 

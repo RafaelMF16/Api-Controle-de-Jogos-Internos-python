@@ -6,7 +6,7 @@ from app.application.dtos.equipe_dto import EquipeInput, MembroInput
 from app.application.services.equipe_service import EquipeService
 from app.application.services.deletion_audit_service import DeletionAuditService
 from app.application.services.usuario_service import UsuarioService
-from app.domain.entities.equipe import ATLETA_FUNCAO, CAPITAO_FUNCAO, Equipe, ModalidadeEquipe, eh_membro_capitao
+from app.domain.entities.equipe import ATLETA_FUNCAO, CAPITAO_FUNCAO, Equipe, MODALIDADES_INDIVIDUAIS, ModalidadeEquipe, eh_membro_capitao
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
 router = APIRouter(prefix="/equipes", tags=["Equipes"])
@@ -47,7 +47,7 @@ def criar_equipe(
     service: EquipeService = Depends(get_equipe_service),
     usuario_service: UsuarioService = Depends(get_usuario_service),
 ) -> Equipe:
-    if payload.modalidade == ModalidadeEquipe.NATACAO:
+    if payload.modalidade in MODALIDADES_INDIVIDUAIS:
         if current_user.role not in {RoleUsuario.ADMIN, RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Você não tem permissão para esta ação.")
 
@@ -106,7 +106,7 @@ def atualizar_equipe(
     if equipe_atual is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cadastro não encontrado.")
 
-    if equipe_atual.modalidade == ModalidadeEquipe.NATACAO:
+    if equipe_atual.modalidade in MODALIDADES_INDIVIDUAIS:
         if current_user.role in {RoleUsuario.VISITANTE, RoleUsuario.CAPITAO}:
             if equipe_atual.usuarioId != current_user.id:
                 raise HTTPException(
@@ -137,7 +137,7 @@ def atualizar_equipe(
 
         payload = _normalizar_payload_coletivo(payload, current_user, equipe_atual)
 
-    if payload.modalidade == ModalidadeEquipe.NATACAO and payload.usuarioId is not None:
+    if payload.modalidade in MODALIDADES_INDIVIDUAIS and payload.usuarioId is not None:
         existente = service.obter_inscricao_individual(payload.usuarioId, payload.modalidade)
         if existente is not None and existente.id != equipe_id:
             raise HTTPException(
@@ -261,6 +261,7 @@ def _to_membro_entity(membro: MembroInput):
         funcao=membro.funcao,
         nivel=membro.nivel,
         especialidade=membro.especialidade,
+        genero=membro.genero,
         usuarioId=membro.usuarioId,
     )
 

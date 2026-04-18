@@ -1,7 +1,7 @@
 from google.cloud.firestore_v1 import FieldFilter, Query
 
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
-from app.domain.entities.equipe import ATLETA_FUNCAO, CAPITAO_FUNCAO, Equipe
+from app.domain.entities.equipe import ATLETA_FUNCAO, CAPITAO_FUNCAO, MODALIDADES_INDIVIDUAIS, Equipe
 from app.domain.entities.equipe import ModalidadeEquipe
 from app.domain.repositories.equipe_repository import EquipeRepository
 from app.infrastructure.persistence.firestore.firestore_client import FirestoreDatabase
@@ -250,7 +250,7 @@ class FirestoreEquipeRepository(EquipeRepository):
         if modalidade:
             query = query.where(filter=FieldFilter("modalidade", "==", modalidade))
         elif categoria == "individual":
-            query = query.where(filter=FieldFilter("modalidade", "==", ModalidadeEquipe.NATACAO.value))
+            query = query.where(filter=FieldFilter("modalidade", "==", ModalidadeEquipe.TENIS_DE_MESA_INDIVIDUAL.value))
 
         if nome_exato:
             query = query.where(filter=FieldFilter("nomeNormalizado", "==", self._normalizar_nome(nome_exato)))
@@ -280,7 +280,7 @@ class FirestoreEquipeRepository(EquipeRepository):
             return self.collection.where(filter=FieldFilter("modalidade", "==", modalidade))
 
         if categoria == "individual":
-            return self.collection.where(filter=FieldFilter("modalidade", "==", ModalidadeEquipe.NATACAO.value))
+            return self.collection.where(filter=FieldFilter("modalidade", "==", ModalidadeEquipe.TENIS_DE_MESA_INDIVIDUAL.value))
 
         return self.collection
 
@@ -327,7 +327,8 @@ class FirestoreEquipeRepository(EquipeRepository):
 
     @staticmethod
     def _normalizar_dados_legados(dados: dict) -> dict:
-        if dados.get("modalidade") == ModalidadeEquipe.NATACAO.value:
+        modalidade_valor = dados.get("modalidade")
+        if modalidade_valor in {m.value for m in MODALIDADES_INDIVIDUAIS}:
             dados["responsavel"] = None
             membros_brutos = dados.get("membros") or []
             base_id = int(dados.get("id", 0) or 0) * 1000
@@ -410,9 +411,9 @@ class FirestoreEquipeRepository(EquipeRepository):
     @staticmethod
     def _categoria_confere(equipe: Equipe, categoria: str | None) -> bool:
         if categoria == "individual":
-            return equipe.modalidade == ModalidadeEquipe.NATACAO
+            return equipe.modalidade in MODALIDADES_INDIVIDUAIS
 
         if categoria == "coletivo":
-            return equipe.modalidade != ModalidadeEquipe.NATACAO
+            return equipe.modalidade not in MODALIDADES_INDIVIDUAIS
 
         return True

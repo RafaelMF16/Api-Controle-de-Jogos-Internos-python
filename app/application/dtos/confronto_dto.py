@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from app.application.utils.profanity_filter import contem_palavrao
 from app.domain.entities.confronto import StatusConfronto
 from app.domain.entities.equipe import ModalidadeEquipe
 
@@ -12,6 +13,12 @@ class ConfrontoInput(BaseModel):
     data: str
     horario: str
     local: str = Field(min_length=2)
+
+    @model_validator(mode="after")
+    def validar_conteudo(self):
+        if contem_palavrao(self.local):
+            raise ValueError("Local do confronto contém conteúdo inapropriado.")
+        return self
     golsA: int | None = None
     golsB: int | None = None
     vencedor: str | None = None
