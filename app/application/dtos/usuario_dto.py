@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 
+from app.application.utils.profanity_filter import contem_palavrao
 from app.domain.entities.usuario import RoleUsuario, TemaUsuario, Usuario
 
 
@@ -15,6 +16,9 @@ class UsuarioBaseInput(BaseModel):
 
     @model_validator(mode="after")
     def normalizar_campos(self) -> "UsuarioBaseInput":
+        if contem_palavrao(self.nome) or contem_palavrao(self.username):
+            raise ValueError("Nome ou username contém conteúdo inapropriado.")
+
         if self.role != RoleUsuario.CAPITAO:
             self.equipeId = None
 
@@ -47,6 +51,9 @@ class VisitorRegisterInput(BaseModel):
         partes_nome = self.nome.strip().split()
         if len(partes_nome) < 2:
             raise ValueError("Informe nome e sobrenome.")
+
+        if contem_palavrao(self.nome) or contem_palavrao(self.username):
+            raise ValueError("Nome ou username contém conteúdo inapropriado.")
 
         self.username = self.username.strip().lower()
         return self
