@@ -8,6 +8,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.confrontos import router as confrontos_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.equipes import router as equipes_router
+from app.api.routes.formatos import router as formatos_router
 from app.api.routes.health import router as health_router
 from app.api.routes.usuarios import router as usuarios_router
 from app.core.config import get_settings
@@ -45,4 +46,5 @@ app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(dashboard_router, prefix=settings.api_prefix)
 app.include_router(equipes_router, prefix=settings.api_prefix)
 app.include_router(confrontos_router, prefix=settings.api_prefix)
+app.include_router(formatos_router, prefix=settings.api_prefix)
 app.include_router(usuarios_router, prefix=settings.api_prefix)
