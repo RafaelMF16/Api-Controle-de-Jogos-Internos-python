@@ -10,6 +10,7 @@ from app.domain.entities.confronto import Confronto, StatusConfronto
 from app.domain.entities.equipe import ModalidadeEquipe
 from app.domain.entities.formato_modalidade import FormatoModalidade, TipoFormato
 from app.domain.repositories.confronto_repository import ConfrontoRepository
+from app.domain.repositories.equipe_repository import EquipeRepository
 from app.domain.repositories.formato_modalidade_repository import FormatoModalidadeRepository
 
 
@@ -18,11 +19,13 @@ class RankingService:
         self,
         formato_repository: FormatoModalidadeRepository,
         confronto_repository: ConfrontoRepository,
+        equipe_repository: EquipeRepository,
         cache: MemoryCache,
         settings: Settings,
     ) -> None:
         self.formato_repository = formato_repository
         self.confronto_repository = confronto_repository
+        self.equipe_repository = equipe_repository
         self.cache = cache
         self.settings = settings
 
@@ -54,7 +57,16 @@ class RankingService:
 
     def _calcular_liga(self, formato: FormatoModalidade, confrontos: list[Confronto]) -> RankingResponse:
         encerrados = [c for c in confrontos if c.status == StatusConfronto.ENCERRADO]
-        classificacao = self._calcular_classificacao(encerrados, formato)
+        todas_equipes = self.equipe_repository.listar_paginado(
+            categoria=None,
+            modalidade=formato.modalidade.value,
+            nome_exato=None,
+            usuario_id=None,
+            limit=200,
+            cursor=None,
+        ).items
+        nomes_equipes = [e.nome for e in todas_equipes]
+        classificacao = self._calcular_classificacao(encerrados, formato, equipes_fixas=nomes_equipes)
         return RankingResponse(
             tipo=TipoFormato.LIGA,
             modalidade=formato.modalidade,

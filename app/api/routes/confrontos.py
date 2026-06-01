@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_confronto_prediction_service, get_confronto_service, get_deletion_audit_service, require_roles
+from app.api.dependencies import get_confronto_prediction_service, get_confronto_service, get_deletion_audit_service, get_phase_advance_service, require_roles
 from app.application.dtos.confronto_dto import ConfrontoInput
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
 from app.application.services.deletion_audit_service import DeletionAuditService
+from app.application.services.phase_advance_service import PhaseAdvanceService
 from app.domain.entities.confronto import Confronto, StatusConfronto
 from app.domain.entities.usuario import RoleUsuario, Usuario
 
@@ -60,10 +61,18 @@ def atualizar_confronto(
     payload: ConfrontoInput,
     _: Usuario = Depends(require_roles(RoleUsuario.ADMIN, RoleUsuario.JUIZ)),
     service: ConfrontoService = Depends(get_confronto_service),
+    phase_service: PhaseAdvanceService = Depends(get_phase_advance_service),
 ) -> Confronto:
     confronto_atualizado = service.atualizar_confronto(confronto_id, payload)
     if confronto_atualizado is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Confronto nao encontrado.")
+
+    if confronto_atualizado.status == StatusConfronto.ENCERRADO:
+        try:
+            phase_service.tentar_avancar_fase(confronto_atualizado)
+        except Exception:
+            pass
+
     return confronto_atualizado
 
 

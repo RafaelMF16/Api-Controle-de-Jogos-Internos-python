@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
+from app.application.services.confronto_generation_service import ConfrontoGenerationService
 from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
 from app.application.services.deletion_audit_service import DeletionAuditService
@@ -13,6 +14,7 @@ from app.application.services.equipe_service import EquipeService
 from app.application.services.fallback_prediction_provider import FallbackPredictionProvider
 from app.application.services.formato_modalidade_service import FormatoModalidadeService
 from app.application.services.heuristic_prediction_provider import HeuristicPredictionProvider
+from app.application.services.phase_advance_service import PhaseAdvanceService
 from app.application.services.prediction_provider import PredictionProvider
 from app.application.services.ranking_service import RankingService
 from app.application.services.usuario_service import UsuarioService
@@ -127,10 +129,27 @@ def get_formato_service() -> FormatoModalidadeService:
     return FormatoModalidadeService(get_formato_repository(), get_cache())
 
 
+def get_confronto_generation_service() -> ConfrontoGenerationService:
+    return ConfrontoGenerationService(
+        confronto_repository=get_confronto_repository(),
+        equipe_repository=get_equipe_repository(),
+        cache=get_cache(),
+    )
+
+
+def get_phase_advance_service() -> PhaseAdvanceService:
+    return PhaseAdvanceService(
+        confronto_repository=get_confronto_repository(),
+        formato_repository=get_formato_repository(),
+        generation_service=get_confronto_generation_service(),
+    )
+
+
 def get_ranking_service() -> RankingService:
     return RankingService(
         formato_repository=get_formato_repository(),
         confronto_repository=get_confronto_repository(),
+        equipe_repository=get_equipe_repository(),
         cache=get_cache(),
         settings=get_settings(),
     )
