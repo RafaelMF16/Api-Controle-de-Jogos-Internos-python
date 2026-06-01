@@ -1,5 +1,4 @@
 from google.cloud.firestore_v1 import FieldFilter, Query
-from google.cloud.firestore_v1.base_query import Or
 
 from app.application.dtos.cursor_pagination_dto import CursorPaginatedResponse
 from app.domain.entities.confronto import Confronto, StatusConfronto
@@ -25,17 +24,16 @@ class FirestoreConfrontoRepository(ConfrontoRepository):
         limit: int,
         cursor: str | None,
     ) -> CursorPaginatedResponse[Confronto]:
-        query = self.collection
-
         if equipe:
-            query = query.where(
-                filter=Or(
-                    [
-                        FieldFilter("equipeA", "==", equipe),
-                        FieldFilter("equipeB", "==", equipe),
-                    ]
-                )
+            return self._listar_paginado_por_equipe(
+                equipe=equipe,
+                modalidade=modalidade,
+                status=status,
+                limit=limit,
+                cursor=cursor,
             )
+
+        query = self.collection
 
         if modalidade:
             query = query.where(filter=FieldFilter("modalidade", "==", modalidade))
@@ -56,6 +54,46 @@ class FirestoreConfrontoRepository(ConfrontoRepository):
 
         return CursorPaginatedResponse(
             items=items,
+            page_size=limit,
+            next_cursor=next_cursor,
+            has_next=has_next,
+        )
+
+    def _listar_paginado_por_equipe(
+        self,
+        *,
+        equipe: str,
+        modalidade: str | None,
+        status: StatusConfronto | None,
+        limit: int,
+        cursor: str | None,
+    ) -> CursorPaginatedResponse[Confronto]:
+        # Dois queries separados evitam a necessidade de indexes compostos
+        # (OR + order_by exigiria index composto equipeA+id e equipeB+id)
+        todos: dict[int, Confronto] = {}
+
+        for campo in ("equipeA", "equipeB"):
+            query = self.collection.where(filter=FieldFilter(campo, "==", equipe))
+            if modalidade:
+                query = query.where(filter=FieldFilter("modalidade", "==", modalidade))
+            if status:
+                query = query.where(filter=FieldFilter("status", "==", status.value))
+            for documento in query.stream():
+                confronto = Confronto.model_validate(documento.to_dict())
+                todos[confronto.id] = confronto
+
+        ordenados = sorted(todos.values(), key=lambda c: c.id, reverse=True)
+
+        if cursor:
+            cursor_id = int(cursor)
+            ordenados = [c for c in ordenados if c.id < cursor_id]
+
+        has_next = len(ordenados) > limit
+        pagina = ordenados[:limit]
+        next_cursor = str(pagina[-1].id) if has_next and pagina else None
+
+        return CursorPaginatedResponse(
+            items=pagina,
             page_size=limit,
             next_cursor=next_cursor,
             has_next=has_next,

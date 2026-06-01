@@ -13,6 +13,7 @@ class Settings:
     firestore_equipes_collection: str
     firestore_confrontos_collection: str
     firestore_usuarios_collection: str
+    firestore_formatos_collection: str
     allowed_origins: list[str]
     jwt_secret_key: str
     jwt_algorithm: str
@@ -55,6 +56,7 @@ def get_settings() -> Settings:
         firestore_equipes_collection=os.getenv("FIRESTORE_EQUIPES_COLLECTION", "equipes"),
         firestore_confrontos_collection=os.getenv("FIRESTORE_CONFRONTOS_COLLECTION", "confrontos"),
         firestore_usuarios_collection=os.getenv("FIRESTORE_USUARIOS_COLLECTION", "usuarios"),
+        firestore_formatos_collection=os.getenv("FIRESTORE_FORMATOS_COLLECTION", "formatos_modalidade"),
         allowed_origins=_parse_allowed_origins(os.getenv("ALLOWED_ORIGINS")),
         jwt_secret_key=os.getenv("JWT_SECRET_KEY", "troque-esta-chave-em-producao"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
