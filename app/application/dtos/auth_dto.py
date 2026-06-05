@@ -14,3 +14,4 @@ class VisitorSignupInput(VisitorRegisterInput):
 
 class AuthResponse(BaseModel):
     user: UsuarioOutput
+    access_token: str

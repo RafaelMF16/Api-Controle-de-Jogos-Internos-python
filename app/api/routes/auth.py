@@ -44,6 +44,7 @@ def login(
     _set_auth_cookie(response, token)
     return AuthResponse(
         user=UsuarioOutput.from_entity(usuario),
+        access_token=token,
     )
 
 
@@ -59,6 +60,7 @@ def register_visitor(
     _set_auth_cookie(response, token)
     return AuthResponse(
         user=UsuarioOutput.from_entity(usuario_autenticado),
+        access_token=token,
     )
 
 

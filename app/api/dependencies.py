@@ -170,7 +170,11 @@ def get_current_user(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Usuario:
     settings = get_settings()
-    token = credentials.credentials if credentials is not None else request.cookies.get(settings.auth_cookie_name)
+    token = (
+        (credentials.credentials if credentials is not None else None)
+        or request.headers.get("X-App-Token")
+        or request.cookies.get(settings.auth_cookie_name)
+    )
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
