@@ -11,11 +11,13 @@ class FirestoreDatabase:
         equipes_collection: str,
         confrontos_collection: str,
         usuarios_collection: str,
+        formatos_collection: str = "formatos_modalidade",
     ) -> None:
         self.project_id = project_id
         self.equipes_collection_name = equipes_collection
         self.confrontos_collection_name = confrontos_collection
         self.usuarios_collection_name = usuarios_collection
+        self.formatos_collection_name = formatos_collection
         self.auditoria_delecoes_collection_name = "_auditoria_delecoes"
         self.metadata_collection_name = "_metadata"
 
@@ -36,6 +38,10 @@ class FirestoreDatabase:
     @property
     def usuarios_collection(self) -> CollectionReference:
         return self.client.collection(self.usuarios_collection_name)
+
+    @property
+    def formatos_collection(self) -> CollectionReference:
+        return self.client.collection(self.formatos_collection_name)
 
     @property
     def auditoria_delecoes_collection(self) -> CollectionReference:

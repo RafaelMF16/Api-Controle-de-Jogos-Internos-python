@@ -98,3 +98,4 @@ class ConfrontoService:
     def _invalidar_cache(self) -> None:
         self.cache.invalidate_prefix("confrontos:")
         self.cache.invalidate_prefix("dashboard:")
+        self.cache.invalidate_prefix("ranking:")

@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "confrontos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "modalidade", "order": "ASCENDING" },
+        { "fieldPath": "id",         "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "confrontos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status",     "order": "ASCENDING" },
+        { "fieldPath": "id",         "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "confrontos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "modalidade", "order": "ASCENDING" },
+        { "fieldPath": "status",     "order": "ASCENDING" },
+        { "fieldPath": "id",         "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

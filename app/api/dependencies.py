@@ -5,14 +5,18 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.application.services.auth_service import AuthService
+from app.application.services.confronto_generation_service import ConfrontoGenerationService
 from app.application.services.confronto_prediction_service import ConfrontoPredictionService
 from app.application.services.confronto_service import ConfrontoService
 from app.application.services.deletion_audit_service import DeletionAuditService
 from app.application.services.dashboard_service import DashboardService
 from app.application.services.equipe_service import EquipeService
 from app.application.services.fallback_prediction_provider import FallbackPredictionProvider
+from app.application.services.formato_modalidade_service import FormatoModalidadeService
 from app.application.services.heuristic_prediction_provider import HeuristicPredictionProvider
+from app.application.services.phase_advance_service import PhaseAdvanceService
 from app.application.services.prediction_provider import PredictionProvider
+from app.application.services.ranking_service import RankingService
 from app.application.services.usuario_service import UsuarioService
 from app.application.services.vertex_prediction_provider import VertexPredictionProvider
 from app.core.cache import MemoryCache
@@ -20,10 +24,12 @@ from app.core.config import get_settings
 from app.domain.entities.usuario import RoleUsuario, Usuario
 from app.domain.repositories.confronto_repository import ConfrontoRepository
 from app.domain.repositories.equipe_repository import EquipeRepository
+from app.domain.repositories.formato_modalidade_repository import FormatoModalidadeRepository
 from app.domain.repositories.usuario_repository import UsuarioRepository
 from app.infrastructure.persistence.firestore.firestore_client import FirestoreDatabase
 from app.infrastructure.repositories.firestore_confronto_repository import FirestoreConfrontoRepository
 from app.infrastructure.repositories.firestore_equipe_repository import FirestoreEquipeRepository
+from app.infrastructure.repositories.firestore_formato_modalidade_repository import FirestoreFormatoModalidadeRepository
 from app.infrastructure.repositories.firestore_usuario_repository import FirestoreUsuarioRepository
 
 security_scheme = HTTPBearer(auto_error=False)
@@ -37,7 +43,12 @@ def get_database() -> FirestoreDatabase:
         equipes_collection=settings.firestore_equipes_collection,
         confrontos_collection=settings.firestore_confrontos_collection,
         usuarios_collection=settings.firestore_usuarios_collection,
+        formatos_collection=settings.firestore_formatos_collection,
     )
+
+
+def get_formato_repository() -> FormatoModalidadeRepository:
+    return FirestoreFormatoModalidadeRepository(get_database())
 
 
 def get_equipe_repository() -> EquipeRepository:
@@ -112,6 +123,36 @@ def get_deletion_audit_service() -> DeletionAuditService:
 
 def get_auth_service() -> AuthService:
     return AuthService(get_usuario_repository(), get_settings(), get_cache())
+
+
+def get_formato_service() -> FormatoModalidadeService:
+    return FormatoModalidadeService(get_formato_repository(), get_cache())
+
+
+def get_confronto_generation_service() -> ConfrontoGenerationService:
+    return ConfrontoGenerationService(
+        confronto_repository=get_confronto_repository(),
+        equipe_repository=get_equipe_repository(),
+        cache=get_cache(),
+    )
+
+
+def get_phase_advance_service() -> PhaseAdvanceService:
+    return PhaseAdvanceService(
+        confronto_repository=get_confronto_repository(),
+        formato_repository=get_formato_repository(),
+        generation_service=get_confronto_generation_service(),
+    )
+
+
+def get_ranking_service() -> RankingService:
+    return RankingService(
+        formato_repository=get_formato_repository(),
+        confronto_repository=get_confronto_repository(),
+        equipe_repository=get_equipe_repository(),
+        cache=get_cache(),
+        settings=get_settings(),
+    )
 
 
 def get_dashboard_service() -> DashboardService:

@@ -50,9 +50,9 @@ class Confronto(BaseModel):
     equipeB: str = Field(min_length=2)
     participanteAId: int | None = None
     participanteBId: int | None = None
-    data: str
-    horario: str
-    local: str = Field(min_length=2)
+    data: str | None = None
+    horario: str | None = None
+    local: str | None = None
     golsA: int | None = None
     golsB: int | None = None
     vencedor: str | None = None
